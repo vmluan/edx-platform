@@ -67,7 +67,8 @@ edx-ace==0.1.9
 edx-analytics-data-api-client
 edx-ccx-keys
 edx-celeryutils
-edx-completion
+-e git+https://github.com/edx/completion.git@9943adeed190d32fa6be9407a1e9c0f321361f06#egg=edx-completion
+# edx-completion
 edx-django-oauth2-provider==1.3.4
 edx-django-release-util             # Release utils for the edx release pipeline
 edx-django-sites-extensions==2.3.1
