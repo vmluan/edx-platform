@@ -17,9 +17,9 @@ from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
 from student.forms import get_registration_extension_form
 from student.models import UserProfile
-from util.password_policy_validators import (
-    password_complexity, password_instructions, password_max_length, password_min_length
-)
+#from util.password_policy_validators import (
+#    password_complexity, password_instructions, password_max_length, password_min_length
+#)
 
 
 def get_password_reset_form():
@@ -118,9 +118,6 @@ def get_login_session_form(request):
         "password",
         label=password_label,
         field_type="password",
-        restrictions={
-            "max_length": password_max_length(),
-        }
     )
 
     form_desc.add_field(
@@ -419,23 +416,10 @@ class RegistrationFormFactory(object):
         # meant to hold the user's password.
         password_label = _(u"Password")
 
-        restrictions = {
-            "min_length": password_min_length(),
-            "max_length": password_max_length(),
-        }
-
-        complexities = password_complexity()
-        for key, value in complexities.iteritems():
-            api_key = key.lower().replace(' ', '_')
-            restrictions[api_key] = value
-
         form_desc.add_field(
             "password",
             label=password_label,
             field_type="password",
-            instructions=password_instructions(),
-            restrictions=restrictions,
-            required=required
         )
 
     def _add_level_of_education_field(self, form_desc, required=True):

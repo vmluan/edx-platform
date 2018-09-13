@@ -27,8 +27,8 @@ from openedx.core.djangoapps.user_api import accounts as accounts_settings
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from student.message_types import PasswordReset
 from student.models import CourseEnrollmentAllowed, email_exists_or_retired
-from util.password_policy_validators import password_max_length, password_min_length, validate_password
-
+#from util.password_policy_validators import password_max_length, password_min_length#, validate_password
+from django.contrib.auth.password_validation import validate_password
 
 class PasswordResetFormNoActive(PasswordResetForm):
     error_messages = {
@@ -204,13 +204,13 @@ class AccountCreationForm(forms.Form):
         }
     )
     password = forms.CharField(
-        min_length=password_min_length(),
-        max_length=password_max_length(),
-        error_messages={
-            "required": _PASSWORD_INVALID_MSG,
-            "min_length": _PASSWORD_INVALID_MSG,
-            "max_length": _PASSWORD_INVALID_MSG,
-        }
+#        min_length=password_min_length(),
+#        max_length=password_max_length(),
+#        error_messages={
+#            "required": _PASSWORD_INVALID_MSG,
+#            "min_length": _PASSWORD_INVALID_MSG,
+#            "max_length": _PASSWORD_INVALID_MSG,
+#        }
     )
     name = forms.CharField(
         min_length=accounts_settings.NAME_MIN_LENGTH,
@@ -282,7 +282,7 @@ class AccountCreationForm(forms.Form):
         """Enforce password policies (if applicable)"""
         password = self.cleaned_data["password"]
         if self.enforce_password_policy:
-            validate_password(password, username=self.cleaned_data.get('username'))
+            validate_password(password)
         return password
 
     def clean_email(self):
