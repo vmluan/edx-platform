@@ -87,4 +87,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'util.password_policy_validators.MaximumLengthValidator',
+    },
 ]

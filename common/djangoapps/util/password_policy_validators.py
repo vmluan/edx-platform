@@ -5,23 +5,26 @@ account creation
 This file was inspired by the django-passwords project at https://github.com/dstufft/django-passwords
 authored by dstufft (https://github.com/dstufft)
 """
-from __future__ import division
+# from __future__ import division
+#
+# import logging
+# import string
+# import unicodedata
+#
+# from django.conf import settings
+# from django.core.exceptions import ValidationError
+# from django.utils.translation import ugettext_lazy as _
+# from django.utils.translation import ungettext_lazy as ungettext
+# from Levenshtein import distance
+# from six import text_type
+#
+# from student.models import PasswordHistory
+from __future__ import unicode_literals
 
-import logging
-import string
-import unicodedata
-
-from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import ungettext_lazy as ungettext
-from Levenshtein import distance
-from six import text_type
+from django.utils.translation import ugettext as _, ungettext
 
-from student.models import PasswordHistory
-
-
-log = logging.getLogger(__name__)
+#log = logging.getLogger(__name__)
 
 ## In description order
 #_allowed_password_complexity = [
@@ -34,8 +37,34 @@ log = logging.getLogger(__name__)
 #    'NON ASCII',
 #    'WORDS',
 #]
-#
-#
+
+
+class MaximumLengthValidator(object):
+    """
+    Validate whether the password is shorter than a maximum length.
+    """
+    def __init__(self, max_length=10):
+        self.max_length = max_length
+
+    def validate(self, password, user=None):
+        if len(password) > self.max_length:
+            raise ValidationError(
+                ungettext(
+                    "This password is too long. It must contain no more than %(max_length)d character.",
+                    "This password is too long. It must contain no more than %(max_length)d characters.",
+                    self.max_length
+                ),
+                code='password_too_long',
+                params={'max_length': self.max_length},
+            )
+
+    def get_help_text(self):
+        return ungettext(
+            "Your password must contain no more than %(max_length)d character.",
+            "Your password must contain no more than %(max_length)d characters.",
+            self.max_length
+        ) % {'max_length': self.max_length}
+
 #class SecurityPolicyError(ValidationError):
 #    pass
 #
