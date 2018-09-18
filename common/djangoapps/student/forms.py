@@ -16,6 +16,7 @@ from django.core.validators import RegexValidator, slug_re
 from django.forms import widgets
 from django.utils.http import int_to_base36
 from django.utils.translation import ugettext_lazy as _
+from six import text_type
 
 from edx_ace import ace
 from edx_ace.recipient import Recipient
@@ -29,6 +30,8 @@ from student.message_types import PasswordReset
 from student.models import CourseEnrollmentAllowed, email_exists_or_retired
 #from util.password_policy_validators import password_max_length, password_min_length#, validate_password
 from django.contrib.auth.password_validation import validate_password
+import logging
+log = logging.getLogger(__name__)
 
 class PasswordResetFormNoActive(PasswordResetForm):
     error_messages = {
@@ -187,7 +190,6 @@ class AccountCreationForm(forms.Form):
     """
 
     _EMAIL_INVALID_MSG = _("A properly formatted e-mail is required")
-    _PASSWORD_INVALID_MSG = _("A valid password is required")
     _NAME_TOO_SHORT_MSG = _("Your legal name must be a minimum of two characters long")
 
     # TODO: Resolve repetition
@@ -203,15 +205,9 @@ class AccountCreationForm(forms.Form):
             "max_length": _("Email cannot be more than %(limit_value)s characters long"),
         }
     )
-    password = forms.CharField(
-#        min_length=password_min_length(),
-#        max_length=password_max_length(),
-#        error_messages={
-#            "required": _PASSWORD_INVALID_MSG,
-#            "min_length": _PASSWORD_INVALID_MSG,
-#            "max_length": _PASSWORD_INVALID_MSG,
-#        }
-    )
+
+    password = forms.CharField()
+
     name = forms.CharField(
         min_length=accounts_settings.NAME_MIN_LENGTH,
         error_messages={
@@ -282,7 +278,17 @@ class AccountCreationForm(forms.Form):
         """Enforce password policies (if applicable)"""
         password = self.cleaned_data["password"]
         if self.enforce_password_policy:
-            validate_password(password)
+            if not isinstance(password, text_type):
+                try:
+                    password = text_type(password, encoding='utf8')  # some checks rely on unicode semantics (e.g. length)
+                except UnicodeDecodeError:
+                    raise ValidationError(_('Invalid password.'))  # no reason to get into weeds
+            # Creating a temporary user to test password against username
+            # This user should NOT be saved
+            username = self.cleaned_data['username']
+            email = self.cleaned_data['email']
+            temp_user = User.objects.create_user(username=username, email=email)
+            validate_password(password, temp_user)
         return password
 
     def clean_email(self):
