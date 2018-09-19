@@ -18,13 +18,16 @@ authored by dstufft (https://github.com/dstufft)
 # from Levenshtein import distance
 # from six import text_type
 #
-# from student.models import PasswordHistory
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _, ungettext
 
-#log = logging.getLogger(__name__)
+from student.models import PasswordHistory
+
+import logging
+log = logging.getLogger(__name__)
 
 ## In description order
 #_allowed_password_complexity = [
@@ -37,6 +40,9 @@ from django.utils.translation import ugettext as _, ungettext
 #    'NON ASCII',
 #    'WORDS',
 #]
+
+class SecurityPolicyError(ValidationError):
+    pass
 
 
 class MaximumLengthValidator(object):
@@ -65,10 +71,69 @@ class MaximumLengthValidator(object):
             self.max_length
         ) % {'max_length': self.max_length}
 
-#class SecurityPolicyError(ValidationError):
-#    pass
-#
-#
+
+class PasswordReuseValidator(object):
+    """
+    Validate whether the password has been recently used as a password.
+
+    Requires a user to be defined and passed in for this validator to run.
+    """
+    def validate(self, password, user=None):
+        if not PasswordHistory.is_allowable_password_reuse(user, password):
+            if user.is_staff:
+                num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STAFF_PASSWORDS_BEFORE_REUSE']
+            else:
+                num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STUDENT_PASSWORDS_BEFORE_REUSE']
+            raise SecurityPolicyError(
+                ungettext(
+                    "You are re-using a password that you have used recently. "
+                    "You must have {num} distinct password before reusing a previous password.",
+                    "You are re-using a password that you have used recently. "
+                    "You must have {num} distinct passwords before reusing a previous password.",
+                    num_distinct
+                ),
+                code='reused_password',
+                params={'num': num_distinct},
+            )
+
+    def get_help_text(self):
+        # The help text is more general because we do not have the user object
+        # to determine if they are staff or not and thus how many distinct
+        # passwords they still need to have.
+        return _("Your password cannot be reused until you have used more passwords.")
+
+
+class PasswordFrequentResetValidator(object):
+    """
+    Validate whether the password has been reset too frequently.
+
+    Requires a user to be defined and passed in for this validator to run.
+    """
+    def __init__(self, num_days=None):
+        self.num_days = settings.ADVANCED_SECURITY_CONFIG['MIN_TIME_IN_DAYS_BETWEEN_ALLOWED_RESETS']
+
+    def validate(self, password, user=None):
+        if PasswordHistory.is_password_reset_too_soon(user):
+            raise SecurityPolicyError(
+                ungettext(
+                    "You are resetting passwords too frequently. Due to security policies, "
+                    "{num} day must elapse between password resets.",
+                    "You are resetting passwords too frequently. Due to security policies, "
+                    "{num} days must elapse between password resets.",
+                    num_days
+                ),
+                code='reset_password_too_frequently',
+                params={'num': num_days},
+            )
+
+    def get_help_text(self):
+        return ungettext(
+            "{num} day must elapse between password resets.",
+            "{num} days must elapse between password resets.",
+            self.num_days
+        ) % {'num': self.num_days}
+
+
 #def password_min_length():
 #    """
 #    Returns minimum required length of a password.

@@ -285,8 +285,8 @@ class AccountCreationForm(forms.Form):
                     raise ValidationError(_('Invalid password.'))  # no reason to get into weeds
             # Creating a temporary user to test password against username
             # This user should NOT be saved
-            username = self.cleaned_data['username']
-            email = self.cleaned_data['email']
+            username = self.cleaned_data.get('username', 'username_is_illformed')
+            email = self.cleaned_data.get('email', '')
             temp_user = User.objects.create_user(username=username, email=email)
             validate_password(password, temp_user)
         return password
