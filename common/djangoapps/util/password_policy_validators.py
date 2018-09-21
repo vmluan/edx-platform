@@ -29,17 +29,17 @@ from student.models import PasswordHistory
 import logging
 log = logging.getLogger(__name__)
 
-## In description order
-#_allowed_password_complexity = [
-#    'ALPHABETIC',
-#    'UPPER',
-#    'LOWER',
-#    'NUMERIC',
-#    'DIGITS',
-#    'PUNCTUATION',
-#    'NON ASCII',
-#    'WORDS',
-#]
+# In description order
+_allowed_password_complexity = [
+    'ALPHABETIC',
+    'UPPER',
+    'LOWER',
+    'NUMERIC',
+    'DIGITS',
+    'PUNCTUATION',
+    'NON ASCII',
+    'WORDS',
+]
 
 class SecurityPolicyError(ValidationError):
     pass
@@ -157,92 +157,91 @@ class PasswordFrequentResetValidator(object):
 #    return max_length
 #
 #
-#def password_complexity():
-#    """
-#    :return: A dict of complexity requirements from settings
-#    """
-#    complexity = {}
-#    if settings.FEATURES.get('ENFORCE_PASSWORD_POLICY', False):
-#        complexity = getattr(settings, 'PASSWORD_COMPLEXITY', {})
-#
-#    valid_complexity = {x: y for x, y in complexity.iteritems() if x in _allowed_password_complexity}
-#
-#    if not password_complexity.logged:
-#        invalid = frozenset(complexity.keys()) - frozenset(valid_complexity.keys())
-#        for key in invalid:
-#            log.warning('Unrecognized %s value in PASSWORD_COMPLEXITY setting.', key)
-#        password_complexity.logged = True
-#
-#    return valid_complexity
-#
-#
-## Declare static variable for the function above, which helps avoid issuing multiple log warnings.
-## We don't instead keep a cached version of the complexity rules, because that might trip up unit tests.
-#password_complexity.logged = False
-#
-#
-#def _password_complexity_descriptions(which=None):
-#    """
-#    which: A list of which complexities to describe, None if you want the configured ones
-#    :return: A list of complexity descriptions
-#    """
-#    descs = []
-#    complexity = password_complexity()
-#    if which is None:
-#        which = complexity.keys()
-#
-#    for key in _allowed_password_complexity:  # we iterate over allowed keys so that we get the order right
-#        value = complexity.get(key, 0) if key in which else 0
-#        if not value:
-#            continue
-#
-#        if key == 'ALPHABETIC':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} letter', '{num} letters', value).format(num=value))
-#        elif key == 'UPPER':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} uppercase letter', '{num} uppercase letters', value).format(num=value))
-#        elif key == 'LOWER':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} lowercase letter', '{num} lowercase letters', value).format(num=value))
-#        elif key == 'DIGITS':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} digit', '{num} digits', value).format(num=value))
-#        elif key == 'NUMERIC':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} number', '{num} numbers', value).format(num=value))
-#        elif key == 'PUNCTUATION':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} punctuation mark', '{num} punctuation marks', value).format(num=value))
-#        elif key == 'NON ASCII':  # note that our definition of non-ascii is non-letter, non-digit, non-punctuation
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} symbol', '{num} symbols', value).format(num=value))
-#        elif key == 'WORDS':
-#            # Translators: This appears in a list of password requirements
-#            descs.append(ungettext('{num} word', '{num} words', value).format(num=value))
-#        else:
-#            raise Exception('Unexpected complexity value {}'.format(key))
-#
-#    return descs
-#
-#
-#def password_instructions():
-#    """
-#    :return: A string suitable for display to the user to tell them what password to enter
-#    """
-#    min_length = password_min_length()
-#    reqs = _password_complexity_descriptions()
-#
-#    if not reqs:
-#        return ungettext('Your password must contain at least {num} character.',
-#                         'Your password must contain at least {num} characters.',
-#                         min_length).format(num=min_length)
-#    else:
-#        return ungettext('Your password must contain at least {num} character, including {requirements}.',
-#                         'Your password must contain at least {num} characters, including {requirements}.',
-#                         min_length).format(num=min_length, requirements=' & '.join(reqs))
-#
-#
+def password_complexity():
+    """
+    :return: A dict of complexity requirements from settings
+    """
+    complexity = {}
+    if settings.FEATURES.get('ENFORCE_PASSWORD_POLICY', False):
+        complexity = getattr(settings, 'PASSWORD_COMPLEXITY', {})
+
+    valid_complexity = {x: y for x, y in complexity.iteritems() if x in _allowed_password_complexity}
+
+    if not password_complexity.logged:
+        invalid = frozenset(complexity.keys()) - frozenset(valid_complexity.keys())
+        for key in invalid:
+            log.warning('Unrecognized %s value in PASSWORD_COMPLEXITY setting.', key)
+        password_complexity.logged = True
+
+    return valid_complexity
+
+
+# Declare static variable for the function above, which helps avoid issuing multiple log warnings.
+# We don't instead keep a cached version of the complexity rules, because that might trip up unit tests.
+password_complexity.logged = False
+
+
+def _password_complexity_descriptions(which=None):
+    """
+    which: A list of which complexities to describe, None if you want the configured ones
+    :return: A list of complexity descriptions
+    """
+    descs = []
+    complexity = password_complexity()
+    if which is None:
+        which = complexity.keys()
+
+    for key in _allowed_password_complexity:  # we iterate over allowed keys so that we get the order right
+        value = complexity.get(key, 0) if key in which else 0
+        if not value:
+            continue
+
+        if key == 'ALPHABETIC':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} letter', '{num} letters', value).format(num=value))
+        elif key == 'UPPER':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} uppercase letter', '{num} uppercase letters', value).format(num=value))
+        elif key == 'LOWER':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} lowercase letter', '{num} lowercase letters', value).format(num=value))
+        elif key == 'DIGITS':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} digit', '{num} digits', value).format(num=value))
+        elif key == 'NUMERIC':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} number', '{num} numbers', value).format(num=value))
+        elif key == 'PUNCTUATION':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} punctuation mark', '{num} punctuation marks', value).format(num=value))
+        elif key == 'NON ASCII':  # note that our definition of non-ascii is non-letter, non-digit, non-punctuation
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} symbol', '{num} symbols', value).format(num=value))
+        elif key == 'WORDS':
+            # Translators: This appears in a list of password requirements
+            descs.append(ungettext('{num} word', '{num} words', value).format(num=value))
+        else:
+            raise Exception('Unexpected complexity value {}'.format(key))
+
+    return descs
+
+
+def password_instructions():
+    """
+    :return: A string suitable for display to the user to tell them what password to enter
+    """
+    min_length = getattr(settings, 'PASSWORD_MIN_LENGTH', 6)
+    reqs = _password_complexity_descriptions()
+    if not reqs:
+        return ungettext('Your password must contain at least {num} character.',
+                         'Your password must contain at least {num} characters.',
+                         min_length).format(num=min_length)
+    else:
+        return ungettext('Your password must contain at least {num} character, including {requirements}.',
+                         'Your password must contain at least {num} characters, including {requirements}.',
+                         min_length).format(num=min_length, requirements=' & '.join(reqs))
+
+
 #def validate_password(password, user=None, username=None, password_reset=True):
 #    """
 #    Checks user-provided password against our current site policy.

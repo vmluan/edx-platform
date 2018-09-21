@@ -287,7 +287,7 @@ class AccountCreationForm(forms.Form):
             # This user should NOT be saved
             username = self.cleaned_data.get('username', 'username_is_illformed')
             email = self.cleaned_data.get('email', '')
-            temp_user = User.objects.create_user(username=username, email=email)
+            temp_user = User(username=username, email=email)
             validate_password(password, temp_user)
         return password
 

@@ -36,6 +36,8 @@ from .serializers import (
     AccountLegacyProfileSerializer, AccountUserSerializer,
     UserReadOnlySerializer, _visible_fields  # pylint: disable=invalid-name
 )
+import logging
+log = logging.getLogger(__name__)
 
 # Public access point for this function.
 visible_fields = _visible_fields
@@ -323,8 +325,7 @@ def create_account(username, password, email):
     # Validate the username, password, and email
     # This will raise an exception if any of these are not in a valid format.
     _validate_username(username)
-    temp_user = User.objects.create_user(username=username, email=email)
-    _validate_password(password, temp_user)
+    _validate_password(password, username, email)
     _validate_email(email)
 
     # Create the user account, setting them to "inactive" until they activate their account.
@@ -491,17 +492,17 @@ def get_confirm_email_validation_error(confirm_email, email):
     return _validate(_validate_confirm_email, errors.AccountEmailInvalid, confirm_email, email)
 
 
-def get_password_validation_error(password, user=None):
+def get_password_validation_error(password, username=None, email=None):
     """Get the built-in validation error message for when
     the password is invalid in some way.
 
     :param password: The proposed password (unicode).
-    :param user: A temporary user object to check the username.
-    :param default: The message to default to in case of no error.
+    :param username: The username associated with the user's account (unicode).
+    :param email: The email associated with the user's account (unicode).
     :return: Validation error message.
 
     """
-    return _validate(_validate_password, errors.AccountPasswordInvalid, password, user)
+    return _validate(_validate_password, errors.AccountPasswordInvalid, password, username, email)
 
 
 def get_country_validation_error(country):
@@ -640,15 +641,17 @@ def _validate_confirm_email(confirm_email, email):
         raise errors.AccountEmailInvalid(accounts.REQUIRED_FIELD_CONFIRM_EMAIL_MSG)
 
 
-def _validate_password(password, user=None):
+def _validate_password(password, username=None, email=None):
     """Validate the format of the user's password.
 
     Passwords cannot be the same as the username of the account,
-    so we take a temp_user as an argument. This user is never saved.
+    so we create a temp_user using the username and email to test the password against.
+    This user is never saved.
 
     Arguments:
         password (unicode): The proposed password.
-        user (unicode): The temporary user object to validate a user's username against their password.
+        username (unicode): The username associated with the user's account.
+        email (unicode): The email associated with the user's account.
 
     Returns:
         None
@@ -657,14 +660,17 @@ def _validate_password(password, user=None):
         errors.AccountPasswordInvalid
 
     """
+    if username == None or username == '':
+        # raise errors.AccountPasswordInvalid('Username is not defined and the password cannot be validated')
+        username = 'ill_formed_username'
     try:
         _validate_type(password, basestring, accounts.PASSWORD_BAD_TYPE_MSG)
-
-        validate_password(password, user=user)
+        temp_user = User(username=username, email=email)
+        validate_password(password, user=temp_user)
     except errors.AccountDataBadType as invalid_password_err:
         raise errors.AccountPasswordInvalid(text_type(invalid_password_err))
     except ValidationError as validation_err:
-        raise errors.AccountPasswordInvalid(validation_err.message)
+        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))
 
 
 def _validate_country(country):

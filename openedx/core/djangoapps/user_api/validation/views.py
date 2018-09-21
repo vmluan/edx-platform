@@ -18,6 +18,8 @@ from openedx.core.djangoapps.user_api.accounts.api import (
     get_username_existence_validation_error
 )
 from ipware.ip import get_ip
+import logging
+log = logging.getLogger(__name__)
 
 
 class RegistrationValidationThrottle(AnonRateThrottle):
@@ -150,8 +152,9 @@ class RegistrationValidationView(APIView):
 
     def password_handler(self, request):
         username = request.data.get('username', None)
+        email = request.data.get('email', None)
         password = request.data.get('password')
-        return get_password_validation_error(password, username)
+        return get_password_validation_error(password, username, email)
 
     def country_handler(self, request):
         country = request.data.get('country')
