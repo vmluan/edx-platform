@@ -18,7 +18,7 @@ from student.models import User, UserProfile, Registration, email_exists_or_reti
 from student import forms as student_forms
 from student import views as student_views
 from util.model_utils import emit_setting_changed_event
-#from util.password_policy_validators import validate_password
+from util.password_policy_validators import DUMMY_USERNAME
 from django.contrib.auth.password_validation import validate_password
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -661,8 +661,7 @@ def _validate_password(password, username=None, email=None):
 
     """
     if username == None or username == '':
-        # raise errors.AccountPasswordInvalid('Username is not defined and the password cannot be validated')
-        username = 'ill_formed_username'
+        username = DUMMY_USERNAME
     try:
         _validate_type(password, basestring, accounts.PASSWORD_BAD_TYPE_MSG)
         temp_user = User(username=username, email=email)

@@ -29,6 +29,7 @@ from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from student.message_types import PasswordReset
 from student.models import CourseEnrollmentAllowed, email_exists_or_retired
 #from util.password_policy_validators import password_max_length, password_min_length#, validate_password
+from util.password_policy_validators import DUMMY_USERNAME
 from django.contrib.auth.password_validation import validate_password
 import logging
 log = logging.getLogger(__name__)
@@ -285,8 +286,8 @@ class AccountCreationForm(forms.Form):
                     raise ValidationError(_('Invalid password.'))  # no reason to get into weeds
             # Creating a temporary user to test password against username
             # This user should NOT be saved
-            username = self.cleaned_data.get('username', 'username_is_illformed')
-            email = self.cleaned_data.get('email', '')
+            username = self.cleaned_data.get('username', DUMMY_USERNAME)
+            email = self.cleaned_data.get('email')
             temp_user = User(username=username, email=email)
             validate_password(password, temp_user)
         return password

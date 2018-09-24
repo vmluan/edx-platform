@@ -20,7 +20,16 @@ authored by dstufft (https://github.com/dstufft)
 #
 from __future__ import unicode_literals
 
+import random
+import string
+
 from django.conf import settings
+from django.contrib.auth.password_validation import (
+    get_default_password_validators,
+    CommonPasswordValidator,
+    MinimumLengthValidator,
+    UserAttributeSimilarityValidator,
+)
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _, ungettext
 
@@ -41,8 +50,58 @@ _allowed_password_complexity = [
     'WORDS',
 ]
 
+DUMMY_USERNAME = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(30))
+
 class SecurityPolicyError(ValidationError):
     pass
+
+
+def password_validators_instruction_texts(password_validators=None):
+    """
+    Return a string of instruction texts of all configured validators.
+    Expects at least the MinimumLengthValidator to be defined.
+    """
+    complexity_instructions = []
+    # For clarity in the printed instructions, the minimum length instruction
+    # is separated from the complexity instructions. The substring is used as
+    # an indicator to find the proper instruction.
+    length_instruction = ""
+    length_instruction_substring = "at least"
+    if password_validators is None:
+        password_validators = get_default_password_validators()
+    for validator in password_validators:
+        text = validator.get_instruction_text()
+        if text:
+            if length_instruction_substring in text:
+                length_instruction = text
+            else:
+                complexity_instructions.append(text)
+    if complexity_instructions:
+        return _("Your password must contain {length_instruction}, including {complexity_instructions}.").format(
+                    length_instruction=length_instruction,
+                    complexity_instructions=' & '.join(complexity_instructions)
+                )
+    else:
+        return _("Your password must contain {length_instruction}.".format(length_instruction=length_instruction))
+
+
+class CommonPasswordValidator(CommonPasswordValidator):
+    def get_instruction_text(self):
+        return ""
+
+
+class MinimumLengthValidator(MinimumLengthValidator):
+    def get_instruction_text(self):
+        return ungettext(
+            "at least %(min_length)d character",
+            "at least %(min_length)d characters",
+            self.min_length
+        ) % {'min_length': self.min_length}
+
+
+class UserAttributeSimilarityValidator(UserAttributeSimilarityValidator):
+    def get_instruction_text(self):
+        return ""
 
 
 class MaximumLengthValidator(object):
@@ -70,6 +129,9 @@ class MaximumLengthValidator(object):
             "Your password must contain no more than %(max_length)d characters.",
             self.max_length
         ) % {'max_length': self.max_length}
+
+    def get_instruction_text(self):
+        return ""
 
 
 class PasswordReuseValidator(object):
@@ -102,6 +164,9 @@ class PasswordReuseValidator(object):
         # passwords they still need to have.
         return _("Your password cannot be reused until you have used more passwords.")
 
+    def get_instruction_text(self):
+        return ""
+
 
 class PasswordFrequentResetValidator(object):
     """
@@ -132,6 +197,9 @@ class PasswordFrequentResetValidator(object):
             "{num} days must elapse between password resets.",
             self.num_days
         ) % {'num': self.num_days}
+
+    def get_instruction_text(self):
+        return ""
 
 
 #def password_min_length():
