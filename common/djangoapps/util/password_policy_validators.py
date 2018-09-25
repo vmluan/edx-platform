@@ -108,7 +108,7 @@ class MaximumLengthValidator(object):
     """
     Validate whether the password is shorter than a maximum length.
     """
-    def __init__(self, max_length=10):
+    def __init__(self, max_length=100):
         self.max_length = max_length
 
     def validate(self, password, user=None):
@@ -174,8 +174,10 @@ class PasswordFrequentResetValidator(object):
 
     Requires a user to be defined and passed in for this validator to run.
     """
-    def __init__(self, num_days=None):
-        self.num_days = settings.ADVANCED_SECURITY_CONFIG['MIN_TIME_IN_DAYS_BETWEEN_ALLOWED_RESETS']
+    def __init__(self, num_days=0):
+        self.num_days = num_days
+        if settings.FEATURES['ADVANCED_SECURITY']:
+            self.num_days = settings.ADVANCED_SECURITY_CONFIG['MIN_TIME_IN_DAYS_BETWEEN_ALLOWED_RESETS']
 
     def validate(self, password, user=None):
         if PasswordHistory.is_password_reset_too_soon(user):
