@@ -7,21 +7,15 @@ authored by dstufft (https://github.com/dstufft)
 """
 # from __future__ import division
 #
-# import logging
-# import string
-# import unicodedata
-#
-# from django.conf import settings
-# from django.core.exceptions import ValidationError
-# from django.utils.translation import ugettext_lazy as _
-# from django.utils.translation import ungettext_lazy as ungettext
 # from Levenshtein import distance
 # from six import text_type
 #
 from __future__ import unicode_literals
 
+import logging
 import random
 import string
+import unicodedata
 
 from django.conf import settings
 from django.contrib.auth.password_validation import (
@@ -35,7 +29,6 @@ from django.utils.translation import ugettext as _, ungettext
 
 from student.models import PasswordHistory
 
-import logging
 log = logging.getLogger(__name__)
 
 # In description order
@@ -65,8 +58,8 @@ def password_validators_instruction_texts(password_validators=None):
     # For clarity in the printed instructions, the minimum length instruction
     # is separated from the complexity instructions. The substring is used as
     # an indicator to find the proper instruction.
-    length_instruction = ""
-    length_instruction_substring = "at least"
+    length_instruction = ''
+    length_instruction_substring = 'at least'
     if password_validators is None:
         password_validators = get_default_password_validators()
     for validator in password_validators:
@@ -77,31 +70,31 @@ def password_validators_instruction_texts(password_validators=None):
             else:
                 complexity_instructions.append(text)
     if complexity_instructions:
-        return _("Your password must contain {length_instruction}, including {complexity_instructions}.").format(
+        return _('Your password must contain {length_instruction}, including {complexity_instructions}.').format(
                     length_instruction=length_instruction,
                     complexity_instructions=' & '.join(complexity_instructions)
                 )
     else:
-        return _("Your password must contain {length_instruction}.".format(length_instruction=length_instruction))
+        return _('Your password must contain {length_instruction}.'.format(length_instruction=length_instruction))
 
 
 class CommonPasswordValidator(CommonPasswordValidator):
     def get_instruction_text(self):
-        return ""
+        return ''
 
 
 class MinimumLengthValidator(MinimumLengthValidator):
     def get_instruction_text(self):
         return ungettext(
-            "at least %(min_length)d character",
-            "at least %(min_length)d characters",
+            'at least %(min_length)d character',
+            'at least %(min_length)d characters',
             self.min_length
         ) % {'min_length': self.min_length}
 
 
 class UserAttributeSimilarityValidator(UserAttributeSimilarityValidator):
     def get_instruction_text(self):
-        return ""
+        return ''
 
 
 class MaximumLengthValidator(object):
@@ -115,8 +108,8 @@ class MaximumLengthValidator(object):
         if len(password) > self.max_length:
             raise ValidationError(
                 ungettext(
-                    "This password is too long. It must contain no more than %(max_length)d character.",
-                    "This password is too long. It must contain no more than %(max_length)d characters.",
+                    'This password is too long. It must contain no more than %(max_length)d character.',
+                    'This password is too long. It must contain no more than %(max_length)d characters.',
                     self.max_length
                 ),
                 code='password_too_long',
@@ -125,13 +118,105 @@ class MaximumLengthValidator(object):
 
     def get_help_text(self):
         return ungettext(
-            "Your password must contain no more than %(max_length)d character.",
-            "Your password must contain no more than %(max_length)d characters.",
+            'Your password must contain no more than %(max_length)d character.',
+            'Your password must contain no more than %(max_length)d characters.',
             self.max_length
         ) % {'max_length': self.max_length}
 
     def get_instruction_text(self):
-        return ""
+        return ''
+
+
+class AlphabeticValidator(object):
+    """
+    Validate whether the password contains at least min_alphabetic letters.
+
+    Parameters:
+        min_alphabetic (int): the minimum number of alphabetic characters to require
+            in the password. Must be >= 0.
+    """
+    def __init__(self, min_alphabetic=0):
+        self.min_alphabetic = 0
+
+    def validate(self, password, user=None):
+        count = 0
+        for character in password:
+            if count == self.min_alphabetic:
+                return
+            if character.isalpha():
+                count += 1
+        raise ValidationError(
+            ungettext(
+                'Your password must contain at least %(min_alphabetic)d letter.',
+                'Your password must contain at least %(min_alphabetic)d letters.',
+                self.min_alphabetic
+            ),
+            code='too_few_alphabetic_char',
+            params={'min_alphabetic': self.min_alphabetic},
+        )
+
+    def get_help_text(self):
+        return ungettext(
+            'Your password must contain at least %(min_alphabetic)d letter.',
+            'Your password must contain at least %(min_alphabetic)d letters.',
+            self.min_alphabetic
+        ) % {'min_alphabetic': self.min_alphabetic}
+
+    def get_instruction_text(self):
+        if self.min_alphabetic > 0:
+            return ungettext(
+                '%(num)d letter',
+                '%(num)d letters',
+                self.min_alphabetic
+            ) % {'num': self.min_alphabetic}
+        else:
+            return ''
+
+
+class NumericValidator(object):
+    """
+    Validate whether the password contains at least min_numeric numbers.
+
+    Parameters:
+        min_numeric (int): the minimum number of numeric characters to require
+            in the password. Must be >= 0.
+    """
+    def __init__(self, min_numeric=0):
+        self.min_numeric = 0
+
+    def validate(self, password, user=None):
+        count = 0
+        for character in password:
+            if count == self.min_numeric:
+                return
+            if 'N' in unicodedata.category(character):
+                count += 1
+        raise ValidationError(
+            ungettext(
+                'Your password must contain at least %(min_numeric)d number.',
+                'Your password must contain at least %(min_numeric)d numbers.',
+                self.min_numeric
+            ),
+            code='too_few_numeric_char',
+            params={'min_numeric': self.min_numeric},
+        )
+
+    def get_help_text(self):
+        return ungettext(
+            "Your password must contain at least %(min_numeric)d number.",
+            "Your password must contain at least %(min_numeric)d numbers.",
+            self.min_numeric
+        ) % {'min_numeric': self.min_numeric}
+
+    def get_instruction_text(self):
+        if self.min_numeric > 0:
+            return ungettext(
+                '%(num)d number',
+                '%(num)d numbers',
+                self.min_numeric
+            ) % {'num': self.min_numeric}
+        else:
+            return ''
 
 
 class PasswordReuseValidator(object):
@@ -148,10 +233,10 @@ class PasswordReuseValidator(object):
                 num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STUDENT_PASSWORDS_BEFORE_REUSE']
             raise SecurityPolicyError(
                 ungettext(
-                    "You are re-using a password that you have used recently. "
-                    "You must have {num} distinct password before reusing a previous password.",
-                    "You are re-using a password that you have used recently. "
-                    "You must have {num} distinct passwords before reusing a previous password.",
+                    'You are re-using a password that you have used recently. '
+                    'You must have {num} distinct password before reusing a previous password.',
+                    'You are re-using a password that you have used recently. '
+                    'You must have {num} distinct passwords before reusing a previous password.',
                     num_distinct
                 ),
                 code='reused_password',
@@ -162,10 +247,10 @@ class PasswordReuseValidator(object):
         # The help text is more general because we do not have the user object
         # to determine if they are staff or not and thus how many distinct
         # passwords they still need to have.
-        return _("Your password cannot be reused until you have used more passwords.")
+        return _('Your password cannot be reused until you have used more passwords.')
 
     def get_instruction_text(self):
-        return ""
+        return ''
 
 
 class PasswordFrequentResetValidator(object):
@@ -183,10 +268,10 @@ class PasswordFrequentResetValidator(object):
         if PasswordHistory.is_password_reset_too_soon(user):
             raise SecurityPolicyError(
                 ungettext(
-                    "You are resetting passwords too frequently. Due to security policies, "
-                    "{num} day must elapse between password resets.",
-                    "You are resetting passwords too frequently. Due to security policies, "
-                    "{num} days must elapse between password resets.",
+                    'You are resetting passwords too frequently. Due to security policies, '
+                    '{num} day must elapse between password resets.',
+                    'You are resetting passwords too frequently. Due to security policies, '
+                    '{num} days must elapse between password resets.',
                     num_days
                 ),
                 code='reset_password_too_frequently',
@@ -195,13 +280,13 @@ class PasswordFrequentResetValidator(object):
 
     def get_help_text(self):
         return ungettext(
-            "{num} day must elapse between password resets.",
-            "{num} days must elapse between password resets.",
+            '{num} day must elapse between password resets.',
+            '{num} days must elapse between password resets.',
             self.num_days
         ) % {'num': self.num_days}
 
     def get_instruction_text(self):
-        return ""
+        return ''
 
 
 #def password_min_length():
