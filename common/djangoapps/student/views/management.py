@@ -1186,8 +1186,11 @@ def password_reset_confirm_wrapper(request, uidb36=None, token=None):
         password = request.POST['new_password1']
 
         try:
+            if not isinstance(password, text_type):
+                # some checks rely on unicode semantics (e.g. length)
+                password = text_type(password, encoding='utf8')
             validate_password(password, user=user)
-        except ValidationError as err:
+        except (UnicodeError, ValidationError) as err:
             # We have a password reset attempt which violates some security
             # policy, or any other validation. Use the existing Django template to communicate that
             # back to the user.

@@ -664,10 +664,14 @@ def _validate_password(password, username=None, email=None):
         username = DUMMY_USERNAME
     try:
         _validate_type(password, basestring, accounts.PASSWORD_BAD_TYPE_MSG)
+        if not isinstance(password, text_type):
+            password = text_type(password, encoding='utf8')
         temp_user = User(username=username, email=email)
         validate_password(password, user=temp_user)
     except errors.AccountDataBadType as invalid_password_err:
         raise errors.AccountPasswordInvalid(text_type(invalid_password_err))
+    except UnicodeError:
+        raise errors.AccountPasswordInvalid(_('Invalid password.'))
     except ValidationError as validation_err:
         raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))
 

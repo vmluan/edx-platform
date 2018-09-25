@@ -281,9 +281,11 @@ class AccountCreationForm(forms.Form):
         if self.enforce_password_policy:
             if not isinstance(password, text_type):
                 try:
-                    password = text_type(password, encoding='utf8')  # some checks rely on unicode semantics (e.g. length)
+                    # some checks rely on unicode semantics (e.g. length)
+                    password = text_type(password, encoding='utf8')
                 except UnicodeDecodeError:
-                    raise ValidationError(_('Invalid password.'))  # no reason to get into weeds
+                    # no reason to get into weeds
+                    raise ValidationError(_('Invalid password.'))
             # Creating a temporary user to test password against username
             # This user should NOT be saved
             username = self.cleaned_data.get('username', DUMMY_USERNAME)
