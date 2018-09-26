@@ -185,7 +185,12 @@ class NumericValidator(object):
         self.min_numeric = min_numeric
 
     def validate(self, password, user=None):
-
+        count = 0
+        for character in password:
+            if count == self.min_numeric:
+                return
+            if 'N' in unicodedata.category(character):
+                count += 1
         raise ValidationError(
             ungettext(
                 'Your password must contain at least %(min_numeric)d number.',
