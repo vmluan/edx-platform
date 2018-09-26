@@ -1,15 +1,7 @@
 """
-This file exposes a number of password complexity validators which can be optionally added to
+This file exposes a number of password validators which can be optionally added to
 account creation
-
-This file was inspired by the django-passwords project at https://github.com/dstufft/django-passwords
-authored by dstufft (https://github.com/dstufft)
 """
-# from __future__ import division
-#
-# from Levenshtein import distance
-# from six import text_type
-#
 from __future__ import unicode_literals
 
 import logging
@@ -31,22 +23,7 @@ from student.models import PasswordHistory
 
 log = logging.getLogger(__name__)
 
-# In description order
-_allowed_password_complexity = [
-    'ALPHABETIC',
-    'UPPER',
-    'LOWER',
-    'NUMERIC',
-    'DIGITS',
-    'PUNCTUATION',
-    'NON ASCII',
-    'WORDS',
-]
-
 DUMMY_USERNAME = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(30))
-
-class SecurityPolicyError(ValidationError):
-    pass
 
 
 def password_validators_instruction_texts(password_validators=None):
@@ -100,6 +77,9 @@ class UserAttributeSimilarityValidator(UserAttributeSimilarityValidator):
 class MaximumLengthValidator(object):
     """
     Validate whether the password is shorter than a maximum length.
+
+    Parameters:
+        max_length (int): the maximum number of characters to require in the password.
     """
     def __init__(self, max_length=100):
         self.max_length = max_length
@@ -189,7 +169,7 @@ class NumericValidator(object):
         for character in password:
             if count == self.min_numeric:
                 return
-            if 'N' in unicodedata.category(character):
+            if character.isnumeric():
                 count += 1
         raise ValidationError(
             ungettext(
@@ -311,55 +291,10 @@ class LowercaseValidator(object):
             return ''
 
 
-class DigitValidator(object):
-    """
-    Validate whether the password contains at least min_digit digits.
-
-    Parameters:
-        min_digit (int): the minimum number of digits to require
-            in the password. Must be >= 0.
-    """
-    def __init__(self, min_digit=0):
-        self.min_digit = min_digit
-
-    def validate(self, password, user=None):
-        count = 0
-        for character in password:
-            if count == self.min_digit:
-                return
-            if character.isdigit():
-                count += 1
-        raise ValidationError(
-            ungettext(
-                'Your password must contain at least %(min_digit)d digit.',
-                'Your password must contain at least %(min_digit)d digits.',
-                self.min_digit
-            ),
-            code='too_few_digits',
-            params={'min_digit': self.min_digit},
-        )
-
-    def get_help_text(self):
-        return ungettext(
-            "Your password must contain at least %(min_digit)d digit.",
-            "Your password must contain at least %(min_digit)d digits.",
-            self.min_digit
-        ) % {'min_digit': self.min_digit}
-
-    def get_instruction_text(self):
-        if self.min_digit > 0:
-            return ungettext(
-                '%(num)d digit',
-                '%(num)d digits',
-                self.min_digit
-            ) % {'num': self.min_digit}
-        else:
-            return ''
-
-
 class PunctuationValidator(object):
     """
-    Validate whether the password contains at least min_punctuation digits.
+    Validate whether the password contains at least min_punctuation punctuation characters
+    as defined by unicode categories.
 
     Parameters:
         min_punctuation (int): the minimum number of punctuation characters to require
@@ -373,7 +308,7 @@ class PunctuationValidator(object):
         for character in password:
             if count == self.min_punctuation:
                 return
-            if character in string.punctuation:
+            if 'P' in unicodedata.category(character):
                 count += 1
         raise ValidationError(
             ungettext(
@@ -403,441 +338,47 @@ class PunctuationValidator(object):
             return ''
 
 
-class NonASCIIValidator(object):
+class SymbolValidator(object):
     """
-    Validate whether the password contains at least min_non_ascii characters.
-    NOTE: our definition of non-ascii is non-letter, non-digit, non-punctuation
+    Validate whether the password contains at least min_symbol symbols as defined by unicode categories.
 
     Parameters:
-        min_non_ascii (int): the minimum number of non-ASCII (symbol) characters to require
+        min_symbol (int): the minimum number of symbols to require
             in the password. Must be >= 0.
     """
-    def __init__(self, min_non_ascii=0):
-        self.min_non_ascii = min_non_ascii
+    def __init__(self, min_symbol=0):
+        self.min_symbol = min_symbol
 
     def validate(self, password, user=None):
         count = 0
         for character in password:
-            if count == self.min_non_ascii:
+            if count == self.min_symbol:
                 return
-            if not (character.isalpha() or character.isdigit() or character in string.punctuation):
+            if 'S' in unicodedata.category(character):
                 count += 1
         raise ValidationError(
             ungettext(
-                'Your password must contain at least %(min_non_ascii)d non-ASCII (symbol) character.',
-                'Your password must contain at least %(min_non_ascii)d non-ASCII (symbol) characters.',
-                self.min_non_ascii
+                'Your password must contain at least %(min_symbol)d symbol.',
+                'Your password must contain at least %(min_symbol)d symbols.',
+                self.min_symbol
             ),
-            code='too_few_non_ascii_characters',
-            params={'min_non_ascii': self.min_non_ascii},
+            code='too_few_symbols',
+            params={'min_symbol': self.min_symbol},
         )
 
     def get_help_text(self):
         return ungettext(
-            "Your password must contain at least %(min_non_ascii)d non-ASCII (symbol) character.",
-            "Your password must contain at least %(min_non_ascii)d non-ASCII (symbol) characters.",
-            self.min_non_ascii
-        ) % {'min_non_ascii': self.min_non_ascii}
+            "Your password must contain at least %(min_symbol)d symbol.",
+            "Your password must contain at least %(min_symbol)d symbols.",
+            self.min_symbol
+        ) % {'min_symbol': self.min_symbol}
 
     def get_instruction_text(self):
-        if self.min_non_ascii > 0:
+        if self.min_symbol > 0:
             return ungettext(
-                '%(num)d non-ASCII (symbol) character',
-                '%(num)d non-ASCII (symbol) characters',
-                self.min_non_ascii
-            ) % {'num': self.min_non_ascii}
+                '%(num)d symbol',
+                '%(num)d symbols',
+                self.min_symbol
+            ) % {'num': self.min_symbol}
         else:
             return ''
-
-
-class WordsValidator(object):
-    """
-    Validate whether the password contains at least min_words words.
-    NOTE: our definition of words are having a space in between characters
-
-    Parameters:
-        min_words (int): the minimum number of words to require
-            in the password. Must be >= 1.
-    """
-    def __init__(self, min_words=1):
-        self.min_words = min_words
-
-    def validate(self, password, user=None):
-
-        raise ValidationError(
-            ungettext(
-                'Your password must contain at least %(min_words)d word.',
-                'Your password must contain at least %(min_words)d words.',
-                self.min_words
-            ),
-            code='too_few_words',
-            params={'min_words': self.min_words},
-        )
-
-    def get_help_text(self):
-        return ungettext(
-            "Your password must contain at least %(min_words)d word.",
-            "Your password must contain at least %(min_words)d words.",
-            self.min_words
-        ) % {'min_words': self.min_words}
-
-    def get_instruction_text(self):
-        if self.min_words > 0:
-            return ungettext(
-                '%(num)d word',
-                '%(num)d words',
-                self.min_words
-            ) % {'num': self.min_words}
-        else:
-            return ''
-
-
-class PasswordReuseValidator(object):
-    """
-    Validate whether the password has been recently used as a password.
-
-    Requires a user to be defined and passed in for this validator to run.
-    """
-    def validate(self, password, user=None):
-        if not PasswordHistory.is_allowable_password_reuse(user, password):
-            if user.is_staff:
-                num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STAFF_PASSWORDS_BEFORE_REUSE']
-            else:
-                num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STUDENT_PASSWORDS_BEFORE_REUSE']
-            raise SecurityPolicyError(
-                ungettext(
-                    'You are re-using a password that you have used recently. '
-                    'You must have {num} distinct password before reusing a previous password.',
-                    'You are re-using a password that you have used recently. '
-                    'You must have {num} distinct passwords before reusing a previous password.',
-                    num_distinct
-                ),
-                code='reused_password',
-                params={'num': num_distinct},
-            )
-
-    def get_help_text(self):
-        # The help text is more general because we do not have the user object
-        # to determine if they are staff or not and thus how many distinct
-        # passwords they still need to have.
-        return _('Your password cannot be reused until you have used more passwords.')
-
-    def get_instruction_text(self):
-        return ''
-
-
-class PasswordFrequentResetValidator(object):
-    """
-    Validate whether the password has been reset too frequently.
-
-    Requires a user to be defined and passed in for this validator to run.
-    """
-    def __init__(self, num_days=0):
-        self.num_days = num_days
-        if settings.FEATURES['ADVANCED_SECURITY']:
-            self.num_days = settings.ADVANCED_SECURITY_CONFIG['MIN_TIME_IN_DAYS_BETWEEN_ALLOWED_RESETS']
-
-    def validate(self, password, user=None):
-        if PasswordHistory.is_password_reset_too_soon(user):
-            raise SecurityPolicyError(
-                ungettext(
-                    'You are resetting passwords too frequently. Due to security policies, '
-                    '{num} day must elapse between password resets.',
-                    'You are resetting passwords too frequently. Due to security policies, '
-                    '{num} days must elapse between password resets.',
-                    num_days
-                ),
-                code='reset_password_too_frequently',
-                params={'num': num_days},
-            )
-
-    def get_help_text(self):
-        return ungettext(
-            '{num} day must elapse between password resets.',
-            '{num} days must elapse between password resets.',
-            self.num_days
-        ) % {'num': self.num_days}
-
-    def get_instruction_text(self):
-        return ''
-
-
-#def password_min_length():
-#    """
-#    Returns minimum required length of a password.
-#    Can be overridden by site configuration of PASSWORD_MIN_LENGTH.
-#    """
-#    min_length = getattr(settings, 'PASSWORD_MIN_LENGTH', None)
-#    if min_length is None:
-#        return 2  # Note: This default is simply historical
-#    return min_length
-#
-#
-#def password_max_length():
-#    """
-#    Returns maximum allowed length of a password. If zero, no maximum.
-#    Can be overridden by site configuration of PASSWORD_MAX_LENGTH.
-#    """
-#    # Note: The default value here is simply historical
-#    max_length = getattr(settings, 'PASSWORD_MAX_LENGTH', None)
-#    if max_length is None:
-#        return 75  # Note: This default is simply historical
-#    return max_length
-#
-#
-# def password_complexity():
-#     """
-#     :return: A dict of complexity requirements from settings
-#     """
-#     complexity = {}
-#     if settings.FEATURES.get('ENFORCE_PASSWORD_POLICY', False):
-#         complexity = getattr(settings, 'PASSWORD_COMPLEXITY', {})
-
-#     valid_complexity = {x: y for x, y in complexity.iteritems() if x in _allowed_password_complexity}
-
-#     if not password_complexity.logged:
-#         invalid = frozenset(complexity.keys()) - frozenset(valid_complexity.keys())
-#         for key in invalid:
-#             log.warning('Unrecognized %s value in PASSWORD_COMPLEXITY setting.', key)
-#         password_complexity.logged = True
-
-#     return valid_complexity
-
-
-# Declare static variable for the function above, which helps avoid issuing multiple log warnings.
-# We don't instead keep a cached version of the complexity rules, because that might trip up unit tests.
-# password_complexity.logged = False
-
-
-# def _password_complexity_descriptions(which=None):
-#     """
-#     which: A list of which complexities to describe, None if you want the configured ones
-#     :return: A list of complexity descriptions
-#     """
-#     descs = []
-#     complexity = password_complexity()
-#     if which is None:
-#         which = complexity.keys()
-
-#     for key in _allowed_password_complexity:  # we iterate over allowed keys so that we get the order right
-#         value = complexity.get(key, 0) if key in which else 0
-#         if not value:
-#             continue
-
-#         if key == 'ALPHABETIC':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} letter', '{num} letters', value).format(num=value))
-#         elif key == 'UPPER':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} uppercase letter', '{num} uppercase letters', value).format(num=value))
-#         elif key == 'LOWER':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} lowercase letter', '{num} lowercase letters', value).format(num=value))
-#         elif key == 'DIGITS':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} digit', '{num} digits', value).format(num=value))
-#         elif key == 'NUMERIC':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} number', '{num} numbers', value).format(num=value))
-#         elif key == 'PUNCTUATION':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} punctuation mark', '{num} punctuation marks', value).format(num=value))
-#         elif key == 'NON ASCII':  # note that our definition of non-ascii is non-letter, non-digit, non-punctuation
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} symbol', '{num} symbols', value).format(num=value))
-#         elif key == 'WORDS':
-#             # Translators: This appears in a list of password requirements
-#             descs.append(ungettext('{num} word', '{num} words', value).format(num=value))
-#         else:
-#             raise Exception('Unexpected complexity value {}'.format(key))
-
-#     return descs
-
-
-# def password_instructions():
-#     """
-#     :return: A string suitable for display to the user to tell them what password to enter
-#     """
-#     min_length = getattr(settings, 'PASSWORD_MIN_LENGTH', 6)
-#     reqs = _password_complexity_descriptions()
-#     if not reqs:
-#         return ungettext('Your password must contain at least {num} character.',
-#                          'Your password must contain at least {num} characters.',
-#                          min_length).format(num=min_length)
-#     else:
-#         return ungettext('Your password must contain at least {num} character, including {requirements}.',
-#                          'Your password must contain at least {num} characters, including {requirements}.',
-#                          min_length).format(num=min_length, requirements=' & '.join(reqs))
-
-
-#def validate_password(password, user=None, username=None, password_reset=True):
-#    """
-#    Checks user-provided password against our current site policy.
-#
-#    Raises a ValidationError or SecurityPolicyError depending on the type of error.
-#
-#    Arguments:
-#        password: The user-provided password as a string
-#        user: A User model object, if available. Required to check against security policy.
-#        username: The user-provided username, if available. Taken from 'user' if not provided.
-#        password_reset: Whether to run validators that only make sense in a password reset
-#         context (like PasswordHistory).
-#    """
-#    if not isinstance(password, text_type):
-#        try:
-#            password = text_type(password, encoding='utf8')  # some checks rely on unicode semantics (e.g. length)
-#        except UnicodeDecodeError:
-#            raise ValidationError(_('Invalid password.'))  # no reason to get into weeds
-#
-#    username = username or (user and user.username)
-#
-#    if user and password_reset:
-#        _validate_password_security(password, user)
-#
-#    _validate_password_dictionary(password)
-#    _validate_password_against_username(password, username)
-#
-#    # Some messages are composable, so we'll add them together here
-#    errors = [_validate_password_length(password)]
-#    errors += _validate_password_complexity(password)
-#    errors = filter(None, errors)
-#
-#    if errors:
-#        msg = _('Enter a password with at least {requirements}.').format(requirements=' & '.join(errors))
-#        raise ValidationError(msg)
-#
-#
-#def _validate_password_security(password, user):
-#    """
-#    Check password reuse and similar operational security policy considerations.
-#    """
-#    # Check reuse
-#    if not PasswordHistory.is_allowable_password_reuse(user, password):
-#        if user.is_staff:
-#            num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STAFF_PASSWORDS_BEFORE_REUSE']
-#        else:
-#            num_distinct = settings.ADVANCED_SECURITY_CONFIG['MIN_DIFFERENT_STUDENT_PASSWORDS_BEFORE_REUSE']
-#        raise SecurityPolicyError(ungettext(
-#            "You are re-using a password that you have used recently. "
-#            "You must have {num} distinct password before reusing a previous password.",
-#            "You are re-using a password that you have used recently. "
-#            "You must have {num} distinct passwords before reusing a previous password.",
-#            num_distinct
-#        ).format(num=num_distinct))
-#
-#    # Check reset frequency
-#    if PasswordHistory.is_password_reset_too_soon(user):
-#        num_days = settings.ADVANCED_SECURITY_CONFIG['MIN_TIME_IN_DAYS_BETWEEN_ALLOWED_RESETS']
-#        raise SecurityPolicyError(ungettext(
-#            "You are resetting passwords too frequently. Due to security policies, "
-#            "{num} day must elapse between password resets.",
-#            "You are resetting passwords too frequently. Due to security policies, "
-#            "{num} days must elapse between password resets.",
-#            num_days
-#        ).format(num=num_days))
-#
-#
-#def _validate_password_length(value):
-#    """
-#    Validator that enforces minimum length of a password
-#    """
-#    min_length = password_min_length()
-#    max_length = password_max_length()
-#
-#    if min_length and len(value) < min_length:
-#        # This is an error that can be composed with other requirements, so just return a fragment
-#        # Translators: This appears in a list of password requirements
-#        return ungettext(
-#            "{num} character",
-#            "{num} characters",
-#            min_length
-#        ).format(num=min_length)
-#    elif max_length and len(value) > max_length:
-#        raise ValidationError(ungettext(
-#            "Enter a password with at most {num} character.",
-#            "Enter a password with at most {num} characters.",
-#            max_length
-#        ).format(num=max_length))
-#
-#
-#def _validate_password_complexity(value):
-#    """
-#    Validator that enforces minimum complexity
-#    """
-#    complexities = password_complexity()
-#    if not complexities:
-#        return []
-#
-#    # Sets are here intentionally
-#    uppercase, lowercase, digits, non_ascii, punctuation = set(), set(), set(), set(), set()
-#    alphabetic, numeric = [], []
-#
-#    for character in value:
-#        if character.isupper():
-#            uppercase.add(character)
-#        elif character.islower():
-#            lowercase.add(character)
-#        elif character.isdigit():
-#            digits.add(character)
-#        elif character in string.punctuation:
-#            punctuation.add(character)
-#        else:
-#            non_ascii.add(character)
-#
-#        if character.isalpha():
-#            alphabetic.append(character)
-#        if 'N' in unicodedata.category(character):  # Check to see if the unicode category contains a 'N'umber
-#            numeric.append(character)
-#
-#    words = set(value.split())
-#
-#    errors = []
-#    if len(uppercase) < complexities.get("UPPER", 0):
-#        errors.append('UPPER')
-#    if len(lowercase) < complexities.get("LOWER", 0):
-#        errors.append('LOWER')
-#    if len(digits) < complexities.get("DIGITS", 0):
-#        errors.append('DIGITS')
-#    if len(punctuation) < complexities.get("PUNCTUATION", 0):
-#        errors.append('PUNCTUATION')
-#    if len(non_ascii) < complexities.get("NON ASCII", 0):
-#        errors.append('NON ASCII')
-#    if len(words) < complexities.get("WORDS", 0):
-#        errors.append('WORDS')
-#    if len(numeric) < complexities.get("NUMERIC", 0):
-#        errors.append('NUMERIC')
-#    if len(alphabetic) < complexities.get("ALPHABETIC", 0):
-#        errors.append('ALPHABETIC')
-#
-#    if errors:
-#        return _password_complexity_descriptions(errors)
-#    else:
-#        return []
-#
-#
-#def _validate_password_against_username(password, username):
-#    if not username:
-#        return
-#
-#    if password == username:
-#        # Translators: This message is shown to users who enter a password matching
-#        # the username they enter(ed).
-#        raise ValidationError(_(u"Password cannot be the same as the username."))
-#
-#
-#def _validate_password_dictionary(value):
-#    """
-#    Insures that the password is not too similar to a defined set of dictionary words
-#    """
-#    if not settings.FEATURES.get('ENFORCE_PASSWORD_POLICY', False):
-#        return
-#
-#    password_max_edit_distance = getattr(settings, "PASSWORD_DICTIONARY_EDIT_DISTANCE_THRESHOLD", None)
-#    password_dictionary = getattr(settings, "PASSWORD_DICTIONARY", None)
-#
-#    if password_max_edit_distance and password_dictionary:
-#        for word in password_dictionary:
-#            edit_distance = distance(value, text_type(word))
-#            if edit_distance <= password_max_edit_distance:
-#                raise ValidationError(_("Password is too similar to a dictionary word."),
-#                                      code="dictionary_word")
