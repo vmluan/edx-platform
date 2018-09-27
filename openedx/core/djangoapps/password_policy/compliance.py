@@ -5,12 +5,11 @@ from datetime import datetime
 
 import pytz
 from django.conf import settings
+from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import ugettext as _
-from six import text_type
 
 from util.date_utils import DEFAULT_SHORT_DATE_FORMAT, strftime_localized
-#from util.password_policy_validators import validate_password
-from django.contrib.auth.password_validation import validate_password
+from util.password_policy_validators import unicode_check
 
 
 class NonCompliantPasswordException(Exception):
@@ -107,10 +106,7 @@ def _check_user_compliance(user, password):
     Returns a boolean indicating whether or not the user is compliant with password policy rules.
     """
     try:
-        if not isinstance(password, text_type):
-            # some checks rely on unicode semantics (e.g. length)
-            password = text_type(password, encoding='utf8')
-
+        password = unicode_check(password)
         validate_password(password, user=user, password_reset=False)
         return True
     except Exception:  # pylint: disable=broad-except

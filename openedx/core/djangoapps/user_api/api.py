@@ -17,11 +17,10 @@ from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
 from student.forms import get_registration_extension_form
 from student.models import UserProfile
-from util.password_policy_validators import password_validators_instruction_texts
-#    password_complexity, password_instructions, password_max_length, password_min_length
-#)
-import logging
-log = logging.getLogger(__name__)
+from util.password_policy_validators import (
+    password_validators_instruction_texts, password_validators_restrictions
+)
+
 
 def get_password_reset_form():
     """Return a description of the password reset form.
@@ -119,6 +118,7 @@ def get_login_session_form(request):
         "password",
         label=password_label,
         field_type="password",
+        restrictions=password_validators_restrictions()
     )
 
     form_desc.add_field(
@@ -422,6 +422,7 @@ class RegistrationFormFactory(object):
             label=password_label,
             field_type="password",
             instructions=password_validators_instruction_texts(),
+            restrictions=password_validators_restrictions(),
             required=required
         )
 

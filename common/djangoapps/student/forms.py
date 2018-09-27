@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -16,7 +17,6 @@ from django.core.validators import RegexValidator, slug_re
 from django.forms import widgets
 from django.utils.http import int_to_base36
 from django.utils.translation import ugettext_lazy as _
-from six import text_type
 
 from edx_ace import ace
 from edx_ace.recipient import Recipient
@@ -28,11 +28,8 @@ from openedx.core.djangoapps.user_api import accounts as accounts_settings
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from student.message_types import PasswordReset
 from student.models import CourseEnrollmentAllowed, email_exists_or_retired
-#from util.password_policy_validators import password_max_length, password_min_length#, validate_password
-from util.password_policy_validators import DUMMY_USERNAME
-from django.contrib.auth.password_validation import validate_password
-import logging
-log = logging.getLogger(__name__)
+from util.password_policy_validators import unicode_check
+
 
 class PasswordResetFormNoActive(PasswordResetForm):
     error_messages = {
@@ -279,18 +276,12 @@ class AccountCreationForm(forms.Form):
         """Enforce password policies (if applicable)"""
         password = self.cleaned_data["password"]
         if self.enforce_password_policy:
-            if not isinstance(password, text_type):
-                try:
-                    # some checks rely on unicode semantics (e.g. length)
-                    password = text_type(password, encoding='utf8')
-                except UnicodeDecodeError:
-                    # no reason to get into weeds
-                    raise ValidationError(_('Invalid password.'))
-            # Creating a temporary user to test password against username
+            password = unicode_check(password)
+            # Creating a temporary user object to test password against username
             # This user should NOT be saved
-            username = self.cleaned_data.get('username', DUMMY_USERNAME)
+            username = self.cleaned_data.get('username')
             email = self.cleaned_data.get('email')
-            temp_user = User(username=username, email=email)
+            temp_user = User(username=username, email=email) if username else None
             validate_password(password, temp_user)
         return password
 

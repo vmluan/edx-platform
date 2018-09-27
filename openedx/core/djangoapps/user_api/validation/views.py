@@ -18,8 +18,6 @@ from openedx.core.djangoapps.user_api.accounts.api import (
     get_username_existence_validation_error
 )
 from ipware.ip import get_ip
-import logging
-log = logging.getLogger(__name__)
 
 
 class RegistrationValidationThrottle(AnonRateThrottle):
@@ -146,13 +144,13 @@ class RegistrationValidationView(APIView):
         return invalid_email_error or email_exists_error
 
     def confirm_email_handler(self, request):
-        email = request.data.get('email', None)
+        email = request.data.get('email')
         confirm_email = request.data.get('confirm_email')
         return get_confirm_email_validation_error(confirm_email, email)
 
     def password_handler(self, request):
-        username = request.data.get('username', None)
-        email = request.data.get('email', None)
+        username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
         return get_password_validation_error(password, username, email)
 

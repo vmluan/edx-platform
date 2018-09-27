@@ -9,6 +9,7 @@ from django.utils.translation import override as override_language, ugettext as 
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email, ValidationError
 from django.http import HttpResponseForbidden
 from openedx.core.djangoapps.theming.helpers import get_current_request
@@ -18,8 +19,7 @@ from student.models import User, UserProfile, Registration, email_exists_or_reti
 from student import forms as student_forms
 from student import views as student_views
 from util.model_utils import emit_setting_changed_event
-from util.password_policy_validators import DUMMY_USERNAME
-from django.contrib.auth.password_validation import validate_password
+from util.password_policy_validators import unicode_check
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api import errors, accounts, forms, helpers
@@ -36,8 +36,6 @@ from .serializers import (
     AccountLegacyProfileSerializer, AccountUserSerializer,
     UserReadOnlySerializer, _visible_fields  # pylint: disable=invalid-name
 )
-import logging
-log = logging.getLogger(__name__)
 
 # Public access point for this function.
 visible_fields = _visible_fields
@@ -660,18 +658,13 @@ def _validate_password(password, username=None, email=None):
         errors.AccountPasswordInvalid
 
     """
-    if username == None or username == '':
-        username = DUMMY_USERNAME
     try:
         _validate_type(password, basestring, accounts.PASSWORD_BAD_TYPE_MSG)
-        if not isinstance(password, text_type):
-            password = text_type(password, encoding='utf8')
-        temp_user = User(username=username, email=email)
+        password = unicode_check(password)
+        temp_user = User(username=username, email=email) if username else None
         validate_password(password, user=temp_user)
     except errors.AccountDataBadType as invalid_password_err:
         raise errors.AccountPasswordInvalid(text_type(invalid_password_err))
-    except UnicodeError:
-        raise errors.AccountPasswordInvalid(_('Invalid password.'))
     except ValidationError as validation_err:
         raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))
 
