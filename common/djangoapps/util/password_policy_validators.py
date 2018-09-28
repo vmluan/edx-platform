@@ -10,9 +10,9 @@ import unicodedata
 from django.conf import settings
 from django.contrib.auth.password_validation import (
     get_default_password_validators,
-    CommonPasswordValidator,
-    MinimumLengthValidator,
-    UserAttributeSimilarityValidator,
+    CommonPasswordValidator as DjangoCommonPasswordValidator,
+    MinimumLengthValidator as DjangoMinimumLengthValidator,
+    UserAttributeSimilarityValidator as DjangoUserAttributeSimilarityValidator,
 )
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _, ungettext
@@ -30,16 +30,14 @@ def password_validators_instruction_texts(password_validators=None):
     """
     complexity_instructions = []
     # For clarity in the printed instructions, the minimum length instruction
-    # is separated from the complexity instructions. The substring is used as
-    # an indicator to find the proper instruction.
+    # is separated from the complexity instructions.
     length_instruction = ''
-    length_instruction_substring = 'at least'
     if password_validators is None:
         password_validators = get_default_password_validators()
     for validator in password_validators:
         text = validator.get_instruction_text()
         if text:
-            if length_instruction_substring in text:
+            if isinstance(validator, MinimumLengthValidator):
                 length_instruction = text
             else:
                 complexity_instructions.append(text)
@@ -99,12 +97,10 @@ def _validate_condition(password, fn, min_count):
         True if valid_count >= min_count, else False
     """
     valid_count = len([c for c in password if getattr(c, fn)])
-    if valid_count >= min_count:
-        return True
-    return False
+    return valid_count >= min_count
 
 
-class CommonPasswordValidator(CommonPasswordValidator):
+class CommonPasswordValidator(DjangoCommonPasswordValidator):
     def get_instruction_text(self):
         return ''
 
@@ -115,7 +111,7 @@ class CommonPasswordValidator(CommonPasswordValidator):
         return None, None
 
 
-class MinimumLengthValidator(MinimumLengthValidator):
+class MinimumLengthValidator(DjangoMinimumLengthValidator):
     def get_instruction_text(self):
         return ungettext(
             'at least %(min_length)d character',
@@ -130,7 +126,7 @@ class MinimumLengthValidator(MinimumLengthValidator):
         return 'min_length', self.min_length
 
 
-class UserAttributeSimilarityValidator(UserAttributeSimilarityValidator):
+class UserAttributeSimilarityValidator(DjangoUserAttributeSimilarityValidator):
     def get_instruction_text(self):
         return ''
 
