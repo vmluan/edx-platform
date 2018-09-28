@@ -118,7 +118,10 @@ def get_login_session_form(request):
         "password",
         label=password_label,
         field_type="password",
-        restrictions=password_validators_restrictions()
+        # The following restriction contains the assumption that the max password length will never exceed 5000
+        # characters. The point of this restriction on the login page is to prevent any sort of attacks
+        # involving sending massive passwords.
+        restrictions={'max_length': 5000}
     )
 
     form_desc.add_field(
