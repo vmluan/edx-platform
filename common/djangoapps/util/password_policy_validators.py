@@ -10,9 +10,8 @@ import unicodedata
 from django.conf import settings
 from django.contrib.auth.password_validation import (
     get_default_password_validators,
-    CommonPasswordValidator as DjangoCommonPasswordValidator,
+    validate_password,
     MinimumLengthValidator as DjangoMinimumLengthValidator,
-    UserAttributeSimilarityValidator as DjangoUserAttributeSimilarityValidator,
 )
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _, ungettext
@@ -23,7 +22,7 @@ from student.models import PasswordHistory
 log = logging.getLogger(__name__)
 
 
-def password_validators_instruction_texts(password_validators=None):
+def password_validators_instruction_texts():
     """
     Return a string of instruction texts of all configured validators.
     Expects at least the MinimumLengthValidator to be defined.
@@ -32,11 +31,10 @@ def password_validators_instruction_texts(password_validators=None):
     # For clarity in the printed instructions, the minimum length instruction
     # is separated from the complexity instructions.
     length_instruction = ''
-    if password_validators is None:
-        password_validators = get_default_password_validators()
+    password_validators = get_default_password_validators()
     for validator in password_validators:
-        text = validator.get_instruction_text()
-        if text:
+        if hasattr(validator, 'get_instruction_text'):
+            text = validator.get_instruction_text()
             if isinstance(validator, MinimumLengthValidator):
                 length_instruction = text
             else:
@@ -50,26 +48,38 @@ def password_validators_instruction_texts(password_validators=None):
         return _('Your password must contain {length_instruction}.'.format(length_instruction=length_instruction))
 
 
-def password_validators_restrictions(password_validators=None):
+def password_validators_restrictions():
     """
     Return a dictionary of complexity restrictions to be used by mobile users on
     the registration form
     """
-    complexity_restrictions = {}
-    if password_validators is None:
-        password_validators = get_default_password_validators()
-    for validator in password_validators:
-        key, value = validator.get_restriction()
-        if key:
-            complexity_restrictions[key] = value
+    password_validators = get_default_password_validators()
+    complexity_restrictions = dict(validator.get_restriction()
+                                   for validator in password_validators
+                                   if hasattr(validator, 'get_restriction')
+                                   )
     return complexity_restrictions
 
 
-def unicode_check(password):
+def edX_validate_password(password, user=None):
     """
-    Encodes the password in utf8 if it is not already.
+    EdX's custom password validator for passwords. This function performs the
+    following functions:
+        1) Converts the password to unicode if it is not already
+        2) Calls Django's validate_password method. This calls the validate function
+            in all validators specified in AUTH_PASSWORD_VALIDATORS configuration.
 
-    Returns the password.
+    Parameters:
+        password (str or unicode): the user's password to be validated
+        user (django.contrib.auth.models.User): The user object to use for validating
+        the given password against the username and/or email.
+
+    Returns:
+        None
+
+    Raises:
+        ValidationError if unable to convert password to utf8 or if any of the
+        password validators fail.
     """
     if not isinstance(password, text_type):
         try:
@@ -78,7 +88,8 @@ def unicode_check(password):
         except UnicodeDecodeError:
             # no reason to get into weeds
             raise ValidationError([_('Invalid password.')])
-    return password
+
+    validate_password(password, user)
 
 
 def _validate_condition(password, fn, min_count):
@@ -89,26 +100,14 @@ def _validate_condition(password, fn, min_count):
 
     Parameters:
         password (str): the password
-        fn (str): the function to be tested against the string.
-            Examples are: 'isalpha', 'isnumeric', etc.
+        fn: the function to be tested against the string.
         min_count (int): the minimum number of characters that must satisfy the function
 
     Return:
         True if valid_count >= min_count, else False
     """
-    valid_count = len([c for c in password if getattr(c, fn)])
+    valid_count = len([c for c in password if fn(c)])
     return valid_count >= min_count
-
-
-class CommonPasswordValidator(DjangoCommonPasswordValidator):
-    def get_instruction_text(self):
-        return ''
-
-    def get_restriction(self):
-        """
-        Returns a key, value pair for the restrictions related to the Validator
-        """
-        return None, None
 
 
 class MinimumLengthValidator(DjangoMinimumLengthValidator):
@@ -126,17 +125,6 @@ class MinimumLengthValidator(DjangoMinimumLengthValidator):
         return 'min_length', self.min_length
 
 
-class UserAttributeSimilarityValidator(DjangoUserAttributeSimilarityValidator):
-    def get_instruction_text(self):
-        return ''
-
-    def get_restriction(self):
-        """
-        Returns a key, value pair for the restrictions related to the Validator
-        """
-        return None, None
-
-
 class MaximumLengthValidator(object):
     """
     Validate whether the password is shorter than a maximum length.
@@ -144,7 +132,7 @@ class MaximumLengthValidator(object):
     Parameters:
         max_length (int): the maximum number of characters to require in the password.
     """
-    def __init__(self, max_length=100):
+    def __init__(self, max_length=75):
         self.max_length = max_length
 
     def validate(self, password, user=None):
@@ -166,9 +154,6 @@ class MaximumLengthValidator(object):
             self.max_length
         ) % {'max_length': self.max_length}
 
-    def get_instruction_text(self):
-        return ''
-
     def get_restriction(self):
         """
         Returns a key, value pair for the restrictions related to the Validator
@@ -188,7 +173,7 @@ class AlphabeticValidator(object):
         self.min_alphabetic = min_alphabetic
 
     def validate(self, password, user=None):
-        if _validate_condition(password, 'isalpha', self.min_alphabetic):
+        if _validate_condition(password, lambda c: c.isalpha(), self.min_alphabetic):
             return
         raise ValidationError(
             ungettext(
@@ -236,7 +221,7 @@ class NumericValidator(object):
         self.min_numeric = min_numeric
 
     def validate(self, password, user=None):
-        if _validate_condition(password, 'isnumeric', self.min_numeric):
+        if _validate_condition(password, lambda c: c.isnumeric(), self.min_numeric):
             return
         raise ValidationError(
             ungettext(
@@ -284,7 +269,7 @@ class UppercaseValidator(object):
         self.min_upper = min_upper
 
     def validate(self, password, user=None):
-        if _validate_condition(password, 'isupper', self.min_upper):
+        if _validate_condition(password, lambda c: c.isupper(), self.min_upper):
             return
         raise ValidationError(
             ungettext(
@@ -332,7 +317,7 @@ class LowercaseValidator(object):
         self.min_lower = min_lower
 
     def validate(self, password, user=None):
-        if _validate_condition(password, 'islower', self.min_lower):
+        if _validate_condition(password, lambda c: c.islower(), self.min_lower):
             return
         raise ValidationError(
             ungettext(
@@ -381,8 +366,7 @@ class PunctuationValidator(object):
         self.min_punctuation = min_punctuation
 
     def validate(self, password, user=None):
-        valid_count = len([c for c in password if 'P' in unicodedata.category(c)])
-        if valid_count >= self.min_punctuation:
+        if _validate_condition(password, lambda c: 'P' in unicodedata.category(c), self.min_punctuation):
             return
         raise ValidationError(
             ungettext(
@@ -430,8 +414,7 @@ class SymbolValidator(object):
         self.min_symbol = min_symbol
 
     def validate(self, password, user=None):
-        valid_count = len([c for c in password if 'S' in unicodedata.category(c)])
-        if valid_count >= self.min_punctuation:
+        if _validate_condition(password, lambda c: 'S' in unicodedata.category(c), self.min_symbol):
             return
         raise ValidationError(
             ungettext(

@@ -18,7 +18,6 @@ from django.contrib import messages
 from django.contrib.auth import login as django_login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import AnonymousUser, User
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.views import password_reset_confirm
 from django.core import mail
 from django.urls import reverse
@@ -107,7 +106,7 @@ from third_party_auth.saml import SAP_SUCCESSFACTORS_SAML_KEY
 from util.bad_request_rate_limiter import BadRequestRateLimiter
 from util.db import outer_atomic
 from util.json_request import JsonResponse
-from util.password_policy_validators import unicode_check
+from util.password_policy_validators import edX_validate_password
 
 log = logging.getLogger("edx.student")
 
@@ -1186,8 +1185,7 @@ def password_reset_confirm_wrapper(request, uidb36=None, token=None):
         password = request.POST['new_password1']
 
         try:
-            password = unicode_check(password)
-            validate_password(password, user=user)
+            edX_validate_password(password, user=user)
         except ValidationError as err:
             # We have a password reset attempt which violates some security
             # policy, or any other validation. Use the existing Django template to communicate that

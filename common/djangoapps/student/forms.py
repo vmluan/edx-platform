@@ -9,7 +9,6 @@ from django.conf import settings
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.contrib.auth.models import User
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -28,7 +27,7 @@ from openedx.core.djangoapps.user_api import accounts as accounts_settings
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from student.message_types import PasswordReset
 from student.models import CourseEnrollmentAllowed, email_exists_or_retired
-from util.password_policy_validators import unicode_check
+from util.password_policy_validators import edX_validate_password
 
 
 class PasswordResetFormNoActive(PasswordResetForm):
@@ -276,13 +275,12 @@ class AccountCreationForm(forms.Form):
         """Enforce password policies (if applicable)"""
         password = self.cleaned_data["password"]
         if self.enforce_password_policy:
-            password = unicode_check(password)
             # Creating a temporary user object to test password against username
             # This user should NOT be saved
             username = self.cleaned_data.get('username')
             email = self.cleaned_data.get('email')
             temp_user = User(username=username, email=email) if username else None
-            validate_password(password, temp_user)
+            edX_validate_password(password, temp_user)
         return password
 
     def clean_email(self):
