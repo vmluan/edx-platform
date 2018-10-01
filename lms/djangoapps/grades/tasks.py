@@ -12,19 +12,21 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.utils import DatabaseError
+from django.utils import timezone
 from edx_django_utils.monitoring import set_custom_metric, set_custom_metrics_for_course_key
 
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.grades.config.models import ComputeGradesSetting
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from student.models import CourseEnrollment
 from submissions import api as sub_api
 from track.event_transaction_utils import set_event_transaction_id, set_event_transaction_type
 from util.date_utils import from_timestamp
 from xmodule.modulestore.django import modulestore
 
-from .config.waffle import DISABLE_REGRADE_ON_POLICY_CHANGE, waffle
+from .config.waffle import DISABLE_REGRADE_ON_POLICY_CHANGE, ENFORCE_FREEZE_GRADE_DATE, waffle, waffle_flags
 from .constants import ScoreDatabaseTableEnum
 from .course_grade_factory import CourseGradeFactory
 from .exceptions import DatabaseNotReadyError
@@ -57,6 +59,9 @@ def compute_all_grades_for_course(**kwargs):
         log.debug('Grades: ignoring policy change regrade due to waffle switch')
     else:
         course_key = CourseKey.from_string(kwargs.pop('course_key'))
+        if _are_grades_frozen(course_key):
+            log.info("Attempted compute_all_grades_for_course for course '%s', but grades are frozen.", course_key)
+            return
         for course_key_string, offset, batch_size in _course_task_args(course_key=course_key, **kwargs):
             kwargs.update({
                 'course_key': course_key_string,
@@ -109,6 +114,10 @@ def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pyli
     offset.
     """
     course_key = CourseKey.from_string(course_key)
+    if _are_grades_frozen(course_key):
+        log.info("Attempted compute_grades_for_course for course '%s', but grades are frozen.", course_key)
+        return
+
     enrollments = CourseEnrollment.objects.filter(course_id=course_key).order_by('created')
     student_iter = (enrollment.user for enrollment in enrollments[offset:offset + batch_size])
     for result in CourseGradeFactory().iter(users=student_iter, course_key=course_key, force_update=True):
@@ -138,6 +147,12 @@ def recalculate_course_and_subsection_grades_for_user(self, **kwargs):  # pylint
 
     user = User.objects.get(id=user_id)
     course_key = CourseKey.from_string(course_key_str)
+    if _are_grades_frozen(course_key):
+        log.info(
+            "Attempted recalculate_course_and_subsection_grades_for_user for course '%s', but grades are frozen.",
+            course_key,
+        )
+        return
 
     previous_course_grade = CourseGradeFactory().read(user, course_key=course_key)
     if previous_course_grade and previous_course_grade.attempted:
@@ -189,6 +204,10 @@ def _recalculate_subsection_grade(self, **kwargs):
     """
     try:
         course_key = CourseLocator.from_string(kwargs['course_id'])
+        if _are_grades_frozen(course_key):
+            log.info("Attempted _recalculate_subsection_grade for course '%s', but grades are frozen.", course_key)
+            return
+
         scored_block_usage_key = UsageKey.from_string(kwargs['usage_id']).replace(course_key=course_key)
 
         set_custom_metrics_for_course_key(course_key)
@@ -328,3 +347,13 @@ def _course_task_args(course_key, **kwargs):
 
     for offset in six.moves.range(0, enrollment_count, batch_size):
         yield (six.text_type(course_key), offset, batch_size)
+
+
+def _are_grades_frozen(course_key):
+    """ Returns whether grades are frozen for the given course. """
+    if waffle_flags()[ENFORCE_FREEZE_GRADE_DATE].is_enabled(course_key):
+        course = CourseOverview.get_from_id(course_key)
+        if course.end:
+            freeze_grade_date = course.end + timedelta(30)
+            now = timezone.now()
+            return now > freeze_grade_date

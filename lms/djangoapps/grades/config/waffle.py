@@ -13,6 +13,7 @@ DISABLE_REGRADE_ON_POLICY_CHANGE = u'disable_regrade_on_policy_change'
 
 # Course Flags
 REJECTED_EXAM_OVERRIDES_GRADE = u'rejected_exam_overrides_grade'
+ENFORCE_FREEZE_GRADE_DATE = u'enforce_freeze_grade_date'
 
 
 def waffle():
@@ -32,6 +33,11 @@ def waffle_flags():
         REJECTED_EXAM_OVERRIDES_GRADE: CourseWaffleFlag(
             namespace,
             REJECTED_EXAM_OVERRIDES_GRADE,
-            flag_undefined_default=True
+            flag_undefined_default=True,
+        ),
+        ENFORCE_FREEZE_GRADE_DATE: CourseWaffleFlag(
+            namespace,
+            ENFORCE_FREEZE_GRADE_DATE,
+            flag_undefined_default=False,
         )
     }
