@@ -43,9 +43,9 @@ def password_validators_instruction_texts(password_validators=None):
                 complexity_instructions.append(text)
     if complexity_instructions:
         return _('Your password must contain {length_instruction}, including {complexity_instructions}.').format(
-                    length_instruction=length_instruction,
-                    complexity_instructions=' & '.join(complexity_instructions)
-                )
+            length_instruction=length_instruction,
+            complexity_instructions=' & '.join(complexity_instructions)
+        )
     else:
         return _('Your password must contain {length_instruction}.'.format(length_instruction=length_instruction))
 
