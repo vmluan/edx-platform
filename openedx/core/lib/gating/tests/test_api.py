@@ -61,9 +61,21 @@ class TestGatingApi(ModuleStoreTestCase, MilestonesTestCaseMixin):
             display_name='untitled sequential 2'
         )
 
+        # create vertical
+        self.vertical = ItemFactory.create(
+            parent_location=self.chapter1.location,
+            category='vertical',
+            display_name='untitled vertical 1'
+        )
+
         self.generic_milestone = {
             'name': 'Test generic milestone',
             'namespace': unicode(self.seq1.location),
+        }
+
+        self.vertical1_milestone = {
+            'name': 'Test generic milestone',
+            'namespace': unicode(self.vertical.location),
         }
 
     @patch('openedx.core.lib.gating.api.log.warning')
@@ -222,49 +234,45 @@ class TestGatingApi(ModuleStoreTestCase, MilestonesTestCaseMixin):
                 gating_api.is_gate_fulfilled(self.course.id, self.seq1.location, student.id), is_gate_fulfilled
             )
 
-    def test_get_subsection_completion_percentage(self):
+    @data(
+        (1, 1, 100),
+        (0, 0, 0),
+        (1, 0, 100),
+        (0, 1, 0),
+    )
+    @unpack
+    def test_get_subsection_completion_percentage(self, user_problem_completion, user_html_completion,
+                                                  expected_completion_percentage):
         """
         Test if gating_api.get_subsection_completion_percentage returns expected completion percentage
 
+        Note:
+            html blocks are ignored in computation of completion_percentage,so it should not affect result.
+
         """
         student = UserFactory(is_staff=False)
-        gating_api.add_prerequisite(self.course.id, self.seq1.location)
-        gating_api.set_required_content(self.course.id, self.seq2.location, self.seq1.location)
-        milestone = milestones_api.add_milestone(self.generic_milestone)
-        milestones_api.add_course_content_milestone(self.course.id, self.seq1.location, 'fulfills', milestone)
+        gating_api.add_prerequisite(self.course.id, self.vertical.location)
+        gating_api.set_required_content(self.course.id, self.seq2.location, self.vertical.location)
+        milestone = milestones_api.add_milestone(self.vertical1_milestone)
+        milestones_api.add_course_content_milestone(self.course.id, self.vertical.location, 'fulfills', milestone)
 
         problem_block = ItemFactory.create(
-            parent_location=self.seq1.location,
+            parent_location=self.vertical.location,
             category='problem',
             display_name='some problem'
         )
         html_block = ItemFactory.create(
-            parent_location=self.seq1.location,
+            parent_location=self.vertical.location,
             category='html',
             display_name='some html block'
         )
         with patch.object(BlockCompletion, 'get_course_completions') as course_block_completions_mock:
             course_block_completions_mock.return_value = {
-                problem_block.location: 1,
-                html_block.location: 1,
+                problem_block.location: user_problem_completion,
+                html_block.location: user_html_completion,
             }
-            completion_percentage = gating_api.get_subsection_completion_percentage(self.seq1.location, student)
-            self.assertEqual(completion_percentage, 100)
-
-            course_block_completions_mock.return_value = {
-                problem_block.location: 0,
-                html_block.location: 0,
-            }
-            completion_percentage = gating_api.get_subsection_completion_percentage(self.seq1.location, student)
-            self.assertEqual(completion_percentage, 0)
-
-            # html blocks are ignored in computation of completion_percentage,so it should not affect result.
-            course_block_completions_mock.return_value = {
-                problem_block.location: 1,
-                html_block.location: 0,
-            }
-            completion_percentage = gating_api.get_subsection_completion_percentage(self.seq1.location, student)
-            self.assertEqual(completion_percentage, 100)
+            completion_percentage = gating_api.get_subsection_completion_percentage(self.vertical.location, student)
+            self.assertEqual(completion_percentage, expected_completion_percentage)
 
     @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
     def test_compute_is_prereq_met(self):
