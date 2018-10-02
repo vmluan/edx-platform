@@ -6,6 +6,7 @@ import unittest
 import ddt
 from django.conf import settings
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 from edx_oauth2_provider.constants import AUTHORIZED_CLIENTS_SESSION_KEY
 from edx_oauth2_provider.tests.factories import (
@@ -62,9 +63,9 @@ class LogoutTests(TestCase):
         ('/courses', 'testserver'),
         ('https://edx.org/courses', 'edx.org'),
         ('https://test.edx.org/courses', 'edx.org'),
-        ('https://test.edx.org/courses', 'courses.edx.org'),
     )
     @ddt.unpack
+    @override_settings(LOGIN_REDIRECT_WHITELIST=['test.edx.org'])
     def test_logout_redirect_success(self, redirect_url, host):
         url = '{logout_path}?redirect_url={redirect_url}'.format(
             logout_path=reverse('logout'),
