@@ -22,6 +22,31 @@ from student.models import PasswordHistory
 log = logging.getLogger(__name__)
 
 
+def create_validator_config(name, options={}):
+    """
+    This function is meant to be used for testing purposes to create validators
+    easily. It returns a validator config of the form:
+        {
+            "NAME": "util.password_policy_validators.SymbolValidator",
+            "OPTIONS": {"min_symbol": 1}
+        }
+
+    Parameters:
+        name (str): the path name to the validator class to instantiate
+        options (dict): The dictionary of options to pass in to the validator.
+            These are used to initialize the validator with parameters.
+            If undefined, the default parameters will be used.
+
+    Returns:
+        Dictionary containing the NAME and OPTIONS for the validator. These will
+            be used to instantiate an instance of the validator using Django.
+    """
+    if options:
+        return {'NAME': name, 'OPTIONS': options}
+
+    return {'NAME': name}
+
+
 def password_validators_instruction_texts():
     """
     Return a string of instruction texts of all configured validators.

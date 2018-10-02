@@ -219,14 +219,12 @@ class AccountCreationForm(forms.Form):
             data=None,
             extra_fields=None,
             extended_profile_fields=None,
-            enforce_password_policy=False,
             tos_required=True
     ):
         super(AccountCreationForm, self).__init__(data)
 
         extra_fields = extra_fields or {}
         self.extended_profile_fields = extended_profile_fields or {}
-        self.enforce_password_policy = enforce_password_policy
         if tos_required:
             self.fields["terms_of_service"] = TrueField(
                 error_messages={"required": _("You must accept the terms of service.")}
@@ -272,15 +270,14 @@ class AccountCreationForm(forms.Form):
                 self.fields[field] = forms.CharField(required=False)
 
     def clean_password(self):
-        """Enforce password policies (if applicable)"""
+        """Enforce password policies"""
         password = self.cleaned_data["password"]
-        if self.enforce_password_policy:
-            # Creating a temporary user object to test password against username
-            # This user should NOT be saved
-            username = self.cleaned_data.get('username')
-            email = self.cleaned_data.get('email')
-            temp_user = User(username=username, email=email) if username else None
-            edX_validate_password(password, temp_user)
+        # Creating a temporary user object to test password against username
+        # This user should NOT be saved
+        username = self.cleaned_data.get('username')
+        email = self.cleaned_data.get('email')
+        temp_user = User(username=username, email=email) if username else None
+        edX_validate_password(password, temp_user)
         return password
 
     def clean_email(self):

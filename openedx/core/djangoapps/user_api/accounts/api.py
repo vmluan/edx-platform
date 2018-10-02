@@ -282,7 +282,6 @@ def create_account(username, password, email):
 
     * 3rd party auth
     * External auth (shibboleth)
-    * Complex password policies (ENFORCE_PASSWORD_POLICY)
 
     In addition, we assume that some functionality is handled
     at higher layers:

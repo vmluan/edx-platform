@@ -1178,24 +1178,22 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
             }
         )
 
-        # Now with an enabled password policy
-        with mock.patch.dict(settings.FEATURES, {'ENFORCE_PASSWORD_POLICY': True}):
-            msg = u'Your password must contain at least {} characters, including '\
-                  u'3 uppercase letters & 1 symbol.'.format(password_min_length())
-            self._assert_reg_field(
-                no_extra_fields_setting,
-                {
-                    u'name': u'password',
-                    u'label': u'Password',
-                    u'instructions': msg,
-                    u'restrictions': {
-                        'min_length': password_min_length(),
-                        'max_length': password_max_length(),
-                        'non_ascii': 1,
-                        'upper': 3,
-                    },
-                }
-            )
+        msg = u'Your password must contain at least {} characters, including '\
+              u'3 uppercase letters & 1 symbol.'.format(password_min_length())
+        self._assert_reg_field(
+            no_extra_fields_setting,
+            {
+                u'name': u'password',
+                u'label': u'Password',
+                u'instructions': msg,
+                u'restrictions': {
+                    'min_length': password_min_length(),
+                    'max_length': password_max_length(),
+                    'non_ascii': 1,
+                    'upper': 3,
+                },
+            }
+        )
 
     @override_settings(REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
     def test_extension_form_fields(self):

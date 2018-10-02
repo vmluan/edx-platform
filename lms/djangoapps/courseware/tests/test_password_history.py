@@ -301,7 +301,6 @@ class TestPasswordHistory(LoginEnrollmentTestCase):
 
             self.assertIn(success_msg, resp.content)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENFORCE_PASSWORD_POLICY': True})
     @override_settings(PASSWORD_MIN_LENGTH=6)
     def test_password_policy_on_password_reset(self):
         """
