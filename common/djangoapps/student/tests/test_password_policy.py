@@ -18,6 +18,7 @@ from openedx.core.djangoapps.site_configuration.tests.factories import SiteFacto
 from student.views import create_account
 
 
+@patch.dict("django.conf.settings.FEATURES", {'ENFORCE_PASSWORD_POLICY': True})
 class TestPasswordPolicy(TestCase):
     """
     Go through some password policy tests to make sure things are properly working

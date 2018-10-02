@@ -33,7 +33,9 @@ from third_party_auth.tests.testutil import simulate_running_pipeline, ThirdPart
 from third_party_auth.tests.utils import (
     ThirdPartyOAuthTestMixin, ThirdPartyOAuthTestMixinFacebook, ThirdPartyOAuthTestMixinGoogle
 )
-from util.password_policy_validators import password_max_length, password_min_length
+from util.password_policy_validators import (
+    create_validator_config, password_validators_instruction_texts, password_validators_restrictions,
+)
 from .test_helpers import TestCaseForm
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -617,7 +619,7 @@ class LoginSessionViewTest(UserAPITestCase):
                 "placeholder": "",
                 "instructions": "",
                 "restrictions": {
-                    "max_length": password_max_length(),
+                    "max_length": 5000,
                 },
                 "errorMessages": {},
                 "supplementalText": "",
@@ -1152,15 +1154,16 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
                 u"type": u"password",
                 u"required": True,
                 u"label": u"Password",
-                u"instructions": u'Your password must contain at least {} characters.'.format(password_min_length()),
-                u"restrictions": {
-                    'min_length': password_min_length(),
-                    'max_length': password_max_length(),
-                },
+                u"instructions": password_validators_instruction_texts(),
+                u"restrictions": password_validators_restrictions(),
             }
         )
 
-    @override_settings(PASSWORD_COMPLEXITY={'NON ASCII': 1, 'UPPER': 3})
+    @override_settings(AUTH_PASSWORD_VALIDATORS=[
+        create_validator_config('util.password_policy_validators.MinimumLengthValidator', {'min_length': 2}),
+        create_validator_config('util.password_policy_validators.UppercaseValidator', {'min_upper': 3}),
+        create_validator_config('util.password_policy_validators.SymbolValidator', {'min_symbol': 1}),
+    ])
     def test_register_form_password_complexity(self):
         no_extra_fields_setting = {}
 
@@ -1170,28 +1173,20 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
             {
                 u'name': u'password',
                 u'label': u'Password',
-                u'instructions': u'Your password must contain at least {} characters.'.format(password_min_length()),
-                u'restrictions': {
-                    'min_length': password_min_length(),
-                    'max_length': password_max_length(),
-                },
+                u"instructions": password_validators_instruction_texts(),
+                u"restrictions": password_validators_restrictions(),
             }
         )
 
-        msg = u'Your password must contain at least {} characters, including '\
-              u'3 uppercase letters & 1 symbol.'.format(password_min_length())
+        msg = u'Your password must contain at least 2 characters, including '\
+              u'3 uppercase letters & 1 symbol.'
         self._assert_reg_field(
             no_extra_fields_setting,
             {
                 u'name': u'password',
                 u'label': u'Password',
                 u'instructions': msg,
-                u'restrictions': {
-                    'min_length': password_min_length(),
-                    'max_length': password_max_length(),
-                    'non_ascii': 1,
-                    'upper': 3,
-                },
+                u"restrictions": password_validators_restrictions(),
             }
         )
 
@@ -2278,7 +2273,7 @@ class RegistrationViewTest(ThirdPartyAuthTestMixin, UserAPITestCase):
             response_json,
             {
                 u"username": [{u"user_message": USERNAME_BAD_LENGTH_MSG}],
-                u"password": [{u"user_message": u"A valid password is required"}],
+                u"password": [{u"user_message": u"This field is required."}],
             }
         )
 

@@ -17,8 +17,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _, ungettext
 from six import text_type
 
-from student.models import PasswordHistory
-
 log = logging.getLogger(__name__)
 
 

@@ -7,7 +7,6 @@ from openedx.core.djangoapps.user_api.accounts import (
     USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH,
     EMAIL_MAX_LENGTH,
 )
-from util.password_policy_validators import password_max_length, password_min_length
 
 
 INVALID_NAMES = [
@@ -55,7 +54,7 @@ INVALID_PASSWORDS = [
     None,
     u'',
     u'a',
-    u'a' * (password_max_length() + 1)
+    u'a' * 5001,
 ]
 
 INVALID_COUNTRIES = [
@@ -92,9 +91,7 @@ VALID_EMAILS = [
 ]
 
 VALID_PASSWORDS = [
-    u'password',  # :)
-    u'a' * password_min_length(),
-    u'a' * password_max_length()
+    u'good_password_339',
 ]
 
 VALID_COUNTRIES = [
