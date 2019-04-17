@@ -9,8 +9,8 @@ LOGGING['handlers']['local'] = LOGGING['handlers']['tracking'] = {
 
 LOGGING['loggers']['tracking']['handlers'] = ['console']
 
-LMS_BASE = 'edx.devstack.lms:18000'
-CMS_BASE = 'edx.devstack.studio:18010'
+LMS_BASE = '115.79.29.63:18001'
+CMS_BASE = '115.79.29.63:18011'
 SITE_NAME = LMS_BASE
 LMS_ROOT_URL = 'http://{}'.format(LMS_BASE)
 LMS_INTERNAL_ROOT_URL = LMS_ROOT_URL
@@ -44,7 +44,7 @@ JWT_AUTH.update({
 FEATURES.update({
     'AUTOMATIC_AUTH_FOR_TESTING': True,
     'ENABLE_COURSEWARE_SEARCH': True,
-    'ENABLE_COURSE_DISCOVERY': False,
+    'ENABLE_COURSE_DISCOVERY': True,
     'ENABLE_DASHBOARD_SEARCH': True,
     'ENABLE_DISCUSSION_SERVICE': True,
     'SHOW_HEADER_LANGUAGE_SELECTOR': True,
@@ -52,7 +52,7 @@ FEATURES.update({
 })
 
 ENABLE_MKTG_SITE = os.environ.get('ENABLE_MARKETING_SITE', False)
-MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://localhost:8080')
+MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://115.79.29.63:18001')
 
 MKTG_URLS = {
     'ABOUT': '/about',
@@ -82,4 +82,4 @@ MKTG_URLS = {
 
 CREDENTIALS_SERVICE_USERNAME = 'credentials_worker'
 
-COURSE_CATALOG_API_URL = 'http://edx.devstack.discovery:18381/api/v1/'
+COURSE_CATALOG_API_URL = 'http://115.79.29.63:18382/api/v1/'

@@ -365,14 +365,14 @@ FEATURES = {
 
     # Enable footer banner for cookie consent.
     # See https://cookieconsent.insites.com/ for more.
-    'ENABLE_COOKIE_CONSENT': False,
+    'ENABLE_COOKIE_CONSENT': True,
 
     # Whether or not the dynamic EnrollmentTrackUserPartition should be registered.
     'ENABLE_ENROLLMENT_TRACK_USER_PARTITION': True,
 
     # Enable one click program purchase
     # See LEARNER-493
-    'ENABLE_ONE_CLICK_PROGRAM_PURCHASE': False,
+    'ENABLE_ONE_CLICK_PROGRAM_PURCHASE': True,
 
     # Allow users to change their email address.
     'ALLOW_EMAIL_ADDRESS_CHANGE': True,
