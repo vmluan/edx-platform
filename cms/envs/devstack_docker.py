@@ -9,13 +9,13 @@ LOGGING['handlers']['local'] = LOGGING['handlers']['tracking'] = {
 
 LOGGING['loggers']['tracking']['handlers'] = ['console']
 
-LMS_BASE = 'edx.devstack.lms:18000'
-CMS_BASE = 'edx.devstack.studio:18010'
+LMS_BASE = 'http://115.79.29.63:18001'
+CMS_BASE = 'http://115.79.29.63:18011'
 LMS_ROOT_URL = 'http://{}'.format(LMS_BASE)
 
 FEATURES.update({
-    'ENABLE_COURSEWARE_INDEX': False,
-    'ENABLE_LIBRARY_INDEX': False,
+    'ENABLE_COURSEWARE_INDEX': True,
+    'ENABLE_LIBRARY_INDEX': True,
     'ENABLE_DISCUSSION_SERVICE': True,
 })
 
