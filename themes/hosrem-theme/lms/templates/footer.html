@@ -58,21 +58,13 @@ from openedx.core.djangoapps.lang_pref.api import footer_language_selector_is_en
           <a href="/">
             ## this is just a placeholder logo
             ## feel free to change this logo to your own by replacing "logo.png" with your own logo
-            <img alt="organization logo placeholder" src="${static.url("images/logo.png")}">
+            <img alt="organization logo placeholder" src="${static.url("images/logo.svg")}">
           </a>
         </p>
       </div>
 
       <p class="copyright">&copy; ${datetime.now(pytz.timezone(settings.TIME_ZONE)).year} ${static.get_platform_name()}.</p>
 
-      ## Site operators: Please do not remove this paragraph! This attributes back to edX and makes your acknowledgement of edX's trademarks clear.
-      <p class="copyright">
-        ## Translators: 'EdX', 'edX', and 'Open edX' are trademarks of 'edX Inc.'. Please do not translate any of these trademarks and company names.
-        ${_("EdX, Open edX, and the edX and Open edX logos are registered trademarks or trademarks of {link_start}edX Inc.{link_end}").format(
-            link_start=u"<a href='https://www.edx.org/'>",
-            link_end=u"</a>"
-        )}
-      </p>
       <nav class="nav-legal" aria-label="${_('Legal')}">
         <ul>
         % if marketing_link('HONOR') and marketing_link('HONOR') != '#':
@@ -101,21 +93,6 @@ from openedx.core.djangoapps.lang_pref.api import footer_language_selector_is_en
           </li>
         </ul>
       </nav>
-    </div>
-
-    ## please leave this link and use one of the logos provided
-    <div class="footer-about-openedx">
-      <p>
-        <a href="http://openedx.org/">
-          ## standard powered-by logo
-          ## Translators: 'Open edX' is a brand, please keep this untranslated. See http://openedx.org for more information.
-          <img src="https://files.edx.org/openedx-logos/edx-openedx-logo-tag.png" alt="${_('Powered by Open edX')}" width="140" />
-          ## greyscale logo for dark background
-          ## <img src="https://files.edx.org/openedx-logos/edx-openedx-logo-tag-light.png" alt="${_('Powered by Open edX')}" width="140" />
-          ## greyscale logo for light background
-          ## <img src="https://files.edx.org/openedx-logos/edx-openedx-logo-tag-dark.png" alt="${_('Powered by Open edX')}" width="140" />
-        </a>
-      </p>
     </div>
   </footer>
 </div>
