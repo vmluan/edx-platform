@@ -161,6 +161,18 @@ class StudentModule(models.Model):
             module_states = module_states.filter(student_id=student_id)
         return module_states
 
+    @classmethod
+    def save_state(cls, student, course_id, module_state_key, defaults):
+        if not student.is_authenticated():
+            return
+        else:
+            cls.objects.update_or_create(
+                student=student,
+                course_id=course_id,
+                module_state_key=module_state_key,
+                defaults=defaults,
+            )
+
 
 class BaseStudentModuleHistory(models.Model):
     """Abstract class containing most fields used by any class
@@ -357,7 +369,7 @@ class OfflineComputedGradeLog(models.Model):
 class StudentFieldOverride(TimeStampedModel):
     """
     Holds the value of a specific field overriden for a student.  This is used
-    by the code in the `courseware.student_field_overrides` module to provide
+    by the code in the `lms.djangoapps.courseware.student_field_overrides` module to provide
     overrides of xblock fields on a per user basis.
     """
     course_id = CourseKeyField(max_length=255, db_index=True)
