@@ -43,8 +43,8 @@ FEATURES.update({
     'ENABLE_COMBINED_LOGIN_REGISTRATION': True,
 })
 
-ENABLE_MKTG_SITE = os.environ.get('ENABLE_MARKETING_SITE', True)
-MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://115.79.29.63:18000')
+ENABLE_MKTG_SITE = os.environ.get('ENABLE_MARKETING_SITE', False)
+MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://localhost:8080')
 
 MKTG_URLS = {
     'ABOUT': '/about',
