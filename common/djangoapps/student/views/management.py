@@ -5,6 +5,7 @@ Student Views
 import datetime
 import logging
 import uuid
+import pdb
 from collections import namedtuple
 
 from bulk_email.models import Optout
@@ -95,6 +96,7 @@ from util.json_request import JsonResponse
 from util.password_policy_validators import normalize_password, validate_password
 
 log = logging.getLogger("edx.student")
+LOGGER = logging.getLogger(__name__)
 
 AUDIT_LOG = logging.getLogger("audit")
 ReverifyInfo = namedtuple(
@@ -668,6 +670,7 @@ def password_change_request_handler(request):
 
     """
 
+    LOGGER.warn('======= Luan test: password_change_request_handler')
     limiter = BadRequestRateLimiter()
     if limiter.is_rate_limit_exceeded(request):
         AUDIT_LOG.warning("Password reset rate limit exceeded")
@@ -676,7 +679,8 @@ def password_change_request_handler(request):
     user = request.user
     # Prefer logged-in user's email
     email = user.email if user.is_authenticated else request.POST.get('email')
-
+    LOGGER.warn(email)
+    LOGGER.warn(request.is_secure())
     if email:
         try:
             from openedx.core.djangoapps.user_api.accounts.api import request_password_change
@@ -685,6 +689,7 @@ def password_change_request_handler(request):
             destroy_oauth_tokens(user)
         except UserNotFound:
             AUDIT_LOG.info("Invalid password reset attempt")
+            LOGGER.warn('Invalid password reset attempt')
             # Increment the rate limit counter
             limiter.tick_bad_request_counter(request)
 
@@ -708,6 +713,8 @@ def password_change_request_handler(request):
                     user_context=message_context,
                 )
 
+                log.info('============ Luan testing ============')
+                pdb.set_trace()
                 ace.send(msg)
         except UserAPIInternalError as err:
             log.exception('Error occured during password change for user {email}: {error}'

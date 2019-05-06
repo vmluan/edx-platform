@@ -3,6 +3,8 @@
 Programmatic integration point for User API Accounts sub-application
 """
 import datetime
+import logging
+import pdb
 from pytz import UTC
 
 from django.utils.translation import override as override_language, ugettext as _
@@ -49,7 +51,7 @@ from .serializers import (
 
 # Public access point for this function.
 visible_fields = _visible_fields
-
+LOGGER = logging.getLogger(__name__)
 
 @helpers.intercept_errors(errors.UserAPIInternalError, ignore_errors=[errors.UserAPIRequestError])
 def get_account_settings(request, usernames=None, configuration=None, view=None):
@@ -476,11 +478,15 @@ def request_password_change(email, is_secure):
     if form.is_valid():
         # Generate a single-use link for performing a password reset
         # and email it to the user.
+        LOGGER.warn('Form.save')
+        LOGGER.warn(form)
         form.save(
             from_email=configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL),
             use_https=is_secure,
             request=get_current_request(),
         )
+        pdb.set_trace()
+        LOGGER.warn(form)
     else:
         # No user with the provided email address exists.
         raise errors.UserNotFound

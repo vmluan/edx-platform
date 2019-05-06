@@ -63,6 +63,7 @@ def intercept_errors(api_error, ignore_errors=None):
                             kwargs=kwargs,
                             exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex)
                         )
+                        LOGGER.warning('Luan test')
                         LOGGER.warning(msg)
                         raise
 

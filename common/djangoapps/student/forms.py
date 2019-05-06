@@ -3,6 +3,8 @@ Utility functions for validating forms
 """
 import re
 from importlib import import_module
+import logging
+import pdb
 
 from django import forms
 from django.conf import settings
@@ -30,6 +32,7 @@ from student.message_types import AccountRecovery as AccountRecoveryMessage, Pas
 from student.models import AccountRecovery, CourseEnrollmentAllowed, email_exists_or_retired
 from util.password_policy_validators import validate_password
 
+LOGGER = logging.getLogger(__name__)
 
 def send_password_reset_email_for_user(user, request, preferred_email=None):
     """
@@ -61,6 +64,18 @@ def send_password_reset_email_for_user(user, request, preferred_email=None):
         language=get_user_preference(user, LANGUAGE_KEY),
         user_context=message_context,
     )
+    import pdb; pdb.set_trace()
+    from edx_ace.messages import Message
+    msg2 = Message(
+        name="test_message",
+        app_label="my_app",
+        recipient=Recipient(username='staff', email='vo.luan@horus.com.vn'),
+        language='en',
+        context={
+            'stuff': 'to personalize the message',
+        }
+    )
+    ace.send(msg2)
     ace.send(msg)
 
 
@@ -128,7 +143,9 @@ class PasswordResetFormNoActive(PasswordResetForm):
         """
         Generates a one-use only link for resetting password and sends to the
         user.
+        Luan test
         """
+        LOGGER.warn('invoking forms.save here')
         for user in self.users_cache:
             send_password_reset_email_for_user(user, request)
 
