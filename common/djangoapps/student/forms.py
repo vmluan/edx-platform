@@ -64,18 +64,6 @@ def send_password_reset_email_for_user(user, request, preferred_email=None):
         language=get_user_preference(user, LANGUAGE_KEY),
         user_context=message_context,
     )
-    import pdb; pdb.set_trace()
-    from edx_ace.messages import Message
-    msg2 = Message(
-        name="test_message",
-        app_label="my_app",
-        recipient=Recipient(username='staff', email='vo.luan@horus.com.vn'),
-        language='en',
-        context={
-            'stuff': 'to personalize the message',
-        }
-    )
-    ace.send(msg2)
     ace.send(msg)
 
 
