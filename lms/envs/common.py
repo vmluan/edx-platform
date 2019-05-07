@@ -58,7 +58,7 @@ PLATFORM_TWITTER_ACCOUNT = "@YourPlatformTwitterAccount"
 
 ENABLE_JASMINE = False
 
-LMS_ROOT_URL = "http://115.79.29.63:18001"
+LMS_ROOT_URL = "http://115.79.29.63:18000"
 LMS_INTERNAL_ROOT_URL = LMS_ROOT_URL
 LMS_ENROLLMENT_API_PATH = "/api/enrollment/v1/"
 
@@ -75,7 +75,7 @@ FEATURES = {
     'DISPLAY_DEBUG_INFO_TO_STAFF': True,
     'DISPLAY_HISTOGRAMS_TO_STAFF': False,  # For large courses this slows down courseware access for staff.
 
-    'REROUTE_ACTIVATION_EMAIL': False,  # nonempty string = address for all activation emails
+    'REROUTE_ACTIVATION_EMAIL': True,  # nonempty string = address for all activation emails
 
     ## DO NOT SET TO True IN THIS FILE
     ## Doing so will cause all courses to be released on production
@@ -89,14 +89,14 @@ FEATURES = {
 
     # discussion home panel, which includes a subscription on/off setting for discussion digest emails.
     # this should remain off in production until digest notifications are online.
-    'ENABLE_DISCUSSION_HOME_PANEL': False,
+    'ENABLE_DISCUSSION_HOME_PANEL': True,
 
     # Set this to True if you want the discussion digest emails enabled automatically for new users.
     # This will be set on all new account registrations.
     # It is not recommended to enable this feature if ENABLE_DISCUSSION_HOME_PANEL is not enabled, since
     # subscribers who receive digests in that case will only be able to unsubscribe via links embedded
     # in their emails, and they will have no way to resubscribe.
-    'ENABLE_DISCUSSION_EMAIL_DIGEST': False,
+    'ENABLE_DISCUSSION_EMAIL_DIGEST': True,
 
     'ENABLE_DJANGO_ADMIN_SITE': True,  # set true to enable django's admin site, even on prod (e.g. for course ops)
     'ENABLE_SQL_TRACKING_LOGS': False,
@@ -104,7 +104,7 @@ FEATURES = {
 
     'ENABLE_MASQUERADE': True,  # allow course staff to change to student view of courseware
 
-    'ENABLE_SYSADMIN_DASHBOARD': False,  # sysadmin dashboard, to see what courses are loaded, to delete & load courses
+    'ENABLE_SYSADMIN_DASHBOARD': True,  # sysadmin dashboard, to see what courses are loaded, to delete & load courses
 
     'DISABLE_LOGIN_BUTTON': False,  # used in systems where login is automatic, eg MIT SSL
 
@@ -126,7 +126,7 @@ FEATURES = {
 
     # Allows to enable an API endpoint to serve XBlock view, used for example by external applications.
     # See jquey-xblock: https://github.com/edx-solutions/jquery-xblock
-    'ENABLE_XBLOCK_VIEW_ENDPOINT': False,
+    'ENABLE_XBLOCK_VIEW_ENDPOINT': True,
 
     # Allows to configure the LMS to provide CORS headers to serve requests from other domains
     'ENABLE_CORS_HEADERS': False,
@@ -298,13 +298,13 @@ FEATURES = {
     'LICENSING': False,
 
     # Certificates Web/HTML Views
-    'CERTIFICATES_HTML_VIEW': False,
+    'CERTIFICATES_HTML_VIEW': True,
 
     # Course discovery feature
     'ENABLE_COURSE_DISCOVERY': True,
 
     # Setting for overriding default filtering facets for Course discovery
-    # COURSE_DISCOVERY_FILTERS = ["org", "language", "modes"]
+    COURSE_DISCOVERY_FILTERS = ["org", "language", "modes"]
 
     # Software secure fake page feature flag
     'ENABLE_SOFTWARE_SECURE_FAKE': False,
@@ -319,16 +319,16 @@ FEATURES = {
     'SHOW_BUMPER_PERIODICITY': 7 * 24 * 3600,
 
     # Special Exams, aka Timed and Proctored Exams
-    'ENABLE_SPECIAL_EXAMS': False,
+    'ENABLE_SPECIAL_EXAMS': True,
 
     # Enable OpenBadge support. See the BADGR_* settings later in this file.
-    'ENABLE_OPENBADGES': False,
+    'ENABLE_OPENBADGES': True,
 
     # Enable LTI Provider feature.
-    'ENABLE_LTI_PROVIDER': False,
+    'ENABLE_LTI_PROVIDER': True,
 
     # Show the language selector in the header
-    'SHOW_HEADER_LANGUAGE_SELECTOR': False,
+    'SHOW_HEADER_LANGUAGE_SELECTOR': True,
 
     # At edX it's safe to assume that English transcripts are always available
     # This is not the case for all installations.
@@ -336,7 +336,7 @@ FEATURES = {
     'FALLBACK_TO_ENGLISH_TRANSCRIPTS': True,
 
     # Show the language selector in the footer
-    'SHOW_FOOTER_LANGUAGE_SELECTOR': False,
+    'SHOW_FOOTER_LANGUAGE_SELECTOR': True,
 
     # Write new CSM history to the extended table.
     # This will eventually default to True and may be
@@ -358,7 +358,7 @@ FEATURES = {
 
     # Enable footer banner for cookie consent.
     # See https://cookieconsent.insites.com/ for more.
-    'ENABLE_COOKIE_CONSENT': False,
+    'ENABLE_COOKIE_CONSENT': True,
 
     # Whether or not the dynamic EnrollmentTrackUserPartition should be registered.
     'ENABLE_ENROLLMENT_TRACK_USER_PARTITION': True,
@@ -380,17 +380,17 @@ FEATURES = {
     'ENABLE_ENTERPRISE_INTEGRATION': False,
 
     # Whether HTML XBlocks/XModules return HTML content with the Course Blocks API student_view_data
-    'ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA': False,
+    'ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA': True,
 
     # Whether to send an email for failed password reset attempts or not. This is mainly useful for notifying users
     # that they don't have an account associated with email addresses they believe they've registered with.
-    'ENABLE_PASSWORD_RESET_FAILURE_EMAIL': False,
+    'ENABLE_PASSWORD_RESET_FAILURE_EMAIL': True,
 
     # Sets the default browser support. For more information go to http://browser-update.org/customize.html
     'UNSUPPORTED_BROWSER_ALERT_VERSIONS': "{i:10,f:-3,o:-3,s:-3,c:-3}",
 
     # Set this to true to make API docs available at /api-docs/.
-    'ENABLE_API_DOCS': False,
+    'ENABLE_API_DOCS': True,
 
     # Whether to display the account deletion section the account settings page
     'ENABLE_ACCOUNT_DELETION': True,
