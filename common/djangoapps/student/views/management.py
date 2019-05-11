@@ -714,7 +714,7 @@ def password_change_request_handler(request):
                 )
 
                 log.info('============ Luan testing ============')
-                pdb.set_trace()
+                # pdb.set_trace()
                 ace.send(msg)
         except UserAPIInternalError as err:
             log.exception('Error occured during password change for user {email}: {error}'

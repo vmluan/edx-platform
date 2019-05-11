@@ -485,7 +485,7 @@ def request_password_change(email, is_secure):
             use_https=is_secure,
             request=get_current_request(),
         )
-        pdb.set_trace()
+        # pdb.set_trace()
         LOGGER.warn(form)
     else:
         # No user with the provided email address exists.
