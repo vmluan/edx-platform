@@ -44,8 +44,8 @@ for log_name, log_level in LOG_OVERRIDES:
 
 ################################ EMAIL ########################################
 
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = '/edx/src/ace_messages/'
+# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# EMAIL_FILE_PATH = '/edx/src/ace_messages/'
 
 ############################ PYFS XBLOCKS SERVICE #############################
 # Set configuration for Django pyfilesystem
