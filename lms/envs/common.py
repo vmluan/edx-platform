@@ -1640,6 +1640,18 @@ PIPELINE_CSS = {
         ],
         'output_filename': 'css/lms-mobile-rtl.css',
     },
+    'style-hosrem-v1': {
+        'source_filenames': [
+            'css/lms-hosrem-v1.css',
+        ],
+        'output_filename': 'css/lms-hosrem-v1.css',
+    },
+    'style-hosrem-v1-rtl': {
+        'source_filenames': [
+            'css/lms-hosrem-v1-rtl.css',
+        ],
+        'output_filename': 'css/lms-hosrem-v1-rtl.css',
+    },    
 }
 
 common_js = [
