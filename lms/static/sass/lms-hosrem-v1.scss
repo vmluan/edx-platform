@@ -1,4 +1,3 @@
 // LMS for HOSREM theme - CSS application architecture
-.body-header-button{
-    color: red;
-}
+@import 'build-base-v1';
+@import 'build-lms-v1'; // shared app style assets/rendering
