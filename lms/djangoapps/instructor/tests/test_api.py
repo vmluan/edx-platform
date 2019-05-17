@@ -2,6 +2,7 @@
 """
 Unit tests for instructor.api methods.
 """
+from __future__ import print_function
 import datetime
 import functools
 import io
@@ -180,6 +181,7 @@ INSTRUCTOR_POST_ENDPOINTS = set([
     'get_problem_responses',
     'get_proctored_exam_results',
     'get_registration_codes',
+    'get_student_enrollment_status',
     'get_student_progress_url',
     'get_students_features',
     'get_students_who_may_enroll',
@@ -1219,7 +1221,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         url = reverse('students_update_enrollment', kwargs={'course_id': text_type(self.course.id)})
         response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'enroll',
                                           'email_students': False})
-        print "type(self.notenrolled_student.email): {}".format(type(self.notenrolled_student.email))
+        print("type(self.notenrolled_student.email): {}".format(type(self.notenrolled_student.email)))
         self.assertEqual(response.status_code, 200)
 
         # test that the user is now enrolled
@@ -1265,7 +1267,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         environ = {'wsgi.url_scheme': protocol}
         response = self.client.post(url, params, **environ)
 
-        print "type(self.notenrolled_student.email): {}".format(type(self.notenrolled_student.email))
+        print("type(self.notenrolled_student.email): {}".format(type(self.notenrolled_student.email)))
         self.assertEqual(response.status_code, 200)
 
         # test that the user is now enrolled
@@ -1418,7 +1420,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                   'auto_enroll': True}
         environ = {'wsgi.url_scheme': protocol}
         response = self.client.post(url, params, **environ)
-        print "type(self.notregistered_email): {}".format(type(self.notregistered_email))
+        print("type(self.notregistered_email): {}".format(type(self.notregistered_email)))
         self.assertEqual(response.status_code, 200)
 
         # Check the outbox
@@ -1466,7 +1468,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         url = reverse('students_update_enrollment', kwargs={'course_id': text_type(self.course.id)})
         response = self.client.post(url, {'identifiers': self.enrolled_student.email, 'action': 'unenroll',
                                           'email_students': False})
-        print "type(self.enrolled_student.email): {}".format(type(self.enrolled_student.email))
+        print("type(self.enrolled_student.email): {}".format(type(self.enrolled_student.email)))
         self.assertEqual(response.status_code, 200)
 
         # test that the user is now unenrolled
@@ -1509,7 +1511,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         url = reverse('students_update_enrollment', kwargs={'course_id': text_type(self.course.id)})
         response = self.client.post(url, {'identifiers': self.enrolled_student.email, 'action': 'unenroll',
                                           'email_students': True})
-        print "type(self.enrolled_student.email): {}".format(type(self.enrolled_student.email))
+        print("type(self.enrolled_student.email): {}".format(type(self.enrolled_student.email)))
         self.assertEqual(response.status_code, 200)
 
         # test that the user is now unenrolled
@@ -1570,7 +1572,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         url = reverse('students_update_enrollment', kwargs={'course_id': text_type(self.course.id)})
         response = self.client.post(url,
                                     {'identifiers': self.allowed_email, 'action': 'unenroll', 'email_students': True})
-        print "type(self.allowed_email): {}".format(type(self.allowed_email))
+        print("type(self.allowed_email): {}".format(type(self.allowed_email)))
         self.assertEqual(response.status_code, 200)
 
         # test the response data
@@ -1695,7 +1697,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                   'auto_enroll': True}
         environ = {'wsgi.url_scheme': protocol}
         response = self.client.post(url, params, **environ)
-        print "type(self.notregistered_email): {}".format(type(self.notregistered_email))
+        print("type(self.notregistered_email): {}".format(type(self.notregistered_email)))
         self.assertEqual(response.status_code, 200)
 
         # Check the outbox
@@ -1910,6 +1912,65 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         response = self.client.post(url, params)
         self.assertEqual(response.status_code, 200)
         return response
+
+    def test_get_enrollment_status(self):
+        """Check that enrollment states are reported correctly."""
+
+        # enrolled, active
+        url = reverse(
+            'get_student_enrollment_status',
+            kwargs={'course_id': self.course.id.to_deprecated_string()},
+        )
+        params = {
+            'unique_student_identifier': 'EnrolledStudent'
+        }
+        response = self.client.post(url, params)
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual(
+            res_json['enrollment_status'],
+            'Enrollment status for EnrolledStudent: active'
+        )
+
+        # unenrolled, inactive
+        CourseEnrollment.unenroll(
+            self.enrolled_student,
+            self.course.id
+        )
+
+        response = self.client.post(url, params)
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual(
+            res_json['enrollment_status'],
+            'Enrollment status for EnrolledStudent: inactive'
+        )
+
+        # invited, not yet registered
+        params = {
+            'unique_student_identifier': 'robot-allowed@robot.org'
+        }
+
+        response = self.client.post(url, params)
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual(
+            res_json['enrollment_status'],
+            'Enrollment status for robot-allowed@robot.org: pending'
+        )
+
+        # never enrolled or invited
+        params = {
+            'unique_student_identifier': 'nonotever@example.com'
+        }
+
+        response = self.client.post(url, params)
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual(
+            res_json['enrollment_status'],
+            'Enrollment status for nonotever@example.com: never enrolled'
+        )
 
 
 @attr(shard=5)

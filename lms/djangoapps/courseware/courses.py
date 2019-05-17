@@ -8,6 +8,8 @@ from datetime import datetime
 
 import branding
 import pytz
+from crum import get_current_request
+from openedx.features.course_duration_limits.access import AuditExpiredError
 from courseware.access import has_access
 from courseware.access_response import StartDateError, MilestoneAccessError
 from courseware.date_summary import (
@@ -18,6 +20,7 @@ from courseware.date_summary import (
     VerifiedUpgradeDeadlineDate,
     CertificateAvailableDate
 )
+from courseware.masquerade import check_content_start_date_for_masquerade_user
 from courseware.model_data import FieldDataCache
 from courseware.module_render import get_module
 from django.conf import settings
@@ -32,6 +35,7 @@ from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from opaque_keys.edx.keys import UsageKey
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from path import Path as path
 from six import text_type
 from static_replace import replace_static_urls
@@ -131,6 +135,9 @@ def check_course_access(course, user, action, check_if_enrolled=False, check_sur
     if has_access(user, 'staff', course.id):
         return
 
+    request = get_current_request()
+    check_content_start_date_for_masquerade_user(course.id, user, request, course.start)
+
     access_response = has_access(user, action, course, course.id)
     if not access_response:
         # Redirect if StartDateError
@@ -138,6 +145,15 @@ def check_course_access(course, user, action, check_if_enrolled=False, check_sur
             start_date = strftime_localized(course.start, 'SHORT_DATE')
             params = QueryDict(mutable=True)
             params['notlive'] = start_date
+            raise CourseAccessRedirect('{dashboard_url}?{params}'.format(
+                dashboard_url=reverse('dashboard'),
+                params=params.urlencode()
+            ), access_response)
+
+        # Redirect if AuditExpiredError
+        if isinstance(access_response, AuditExpiredError):
+            params = QueryDict(mutable=True)
+            params['access_response_error'] = access_response.additional_context_user_message
             raise CourseAccessRedirect('{dashboard_url}?{params}'.format(
                 dashboard_url=reverse('dashboard'),
                 params=params.urlencode()
@@ -614,3 +630,13 @@ def get_course_chapter_ids(course_key):
         log.exception('Failed to retrieve course from modulestore.')
         return []
     return [unicode(chapter_key) for chapter_key in chapter_keys if chapter_key.block_type == 'chapter']
+
+
+def allow_public_access(course, visibilities):
+    """
+    This checks if the unenrolled access waffle flag for the course is set
+    and the course visibility matches any of the input visibilities.
+    """
+    unenrolled_access_flag = COURSE_ENABLE_UNENROLLED_ACCESS_FLAG.is_enabled(course.id)
+    allow_access = unenrolled_access_flag and course.course_visibility in visibilities
+    return allow_access

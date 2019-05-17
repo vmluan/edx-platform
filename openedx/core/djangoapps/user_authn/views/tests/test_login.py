@@ -1,34 +1,38 @@
+#coding:utf-8
 """
 Tests for student activation and login
 """
 import json
+import unicodedata
 import unittest
 
+import ddt
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core import mail
 from django.core.cache import cache
-from django.urls import NoReverseMatch, reverse
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.test.client import Client
 from django.test.utils import override_settings
+from django.urls import NoReverseMatch, reverse
 from mock import patch
 from six import text_type
 
 from openedx.core.djangoapps.external_auth.models import ExternalAuthMap
-from openedx.core.djangoapps.user_api.config.waffle import PREVENT_AUTH_USER_WRITES, waffle
-from openedx.core.djangoapps.user_authn.cookies import jwt_cookies
-from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
-from openedx.core.djangoapps.user_authn.waffle import JWT_COOKIES_FLAG
 from openedx.core.djangoapps.password_policy.compliance import (
     NonCompliantPasswordException,
     NonCompliantPasswordWarning
 )
+from openedx.core.djangoapps.user_api.config.waffle import PREVENT_AUTH_USER_WRITES, waffle
+from openedx.core.djangoapps.user_authn.cookies import jwt_cookies
+from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from student.tests.factories import RegistrationFactory, UserFactory, UserProfileFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
+@ddt.ddt
 class LoginTest(CacheIsolationTestCase):
     """
     Test login_user() view
@@ -106,8 +110,7 @@ class LoginTest(CacheIsolationTestCase):
                               value='Email or password is incorrect')
         self._assert_audit_log(mock_audit_log, 'warning', [u'Login failed', u'Unknown user email', nonexistent_email])
 
-    @patch.dict("django.conf.settings.FEATURES", {'ADVANCED_SECURITY': True})
-    def test_login_fail_incorrect_email_with_advanced_security(self):
+    def test_login_fail_incorrect_email(self):
         nonexistent_email = u'not_a_user@edx.org'
         response, mock_audit_log = self._login_response(
             nonexistent_email,
@@ -205,7 +208,7 @@ class LoginTest(CacheIsolationTestCase):
         logout_url = reverse('logout')
         with patch('student.models.AUDIT_LOG') as mock_audit_log:
             response = self.client.post(logout_url)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
         self._assert_audit_log(mock_audit_log, 'info', [u'Logout', u'test'])
 
     def test_login_user_info_cookie(self):
@@ -253,7 +256,10 @@ class LoginTest(CacheIsolationTestCase):
         self._assert_response(response, success=True)
 
         response = self.client.post(reverse('logout'))
-        self.assertRedirects(response, "/")
+        expected = {
+            'target': '/',
+        }
+        self.assertDictContainsSubset(expected, response.context_data)
 
     @patch.dict("django.conf.settings.FEATURES", {'SQUELCH_PII_IN_LOGS': True})
     def test_logout_logging_no_pii(self):
@@ -262,7 +268,7 @@ class LoginTest(CacheIsolationTestCase):
         logout_url = reverse('logout')
         with patch('student.models.AUDIT_LOG') as mock_audit_log:
             response = self.client.post(logout_url)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
         self._assert_audit_log(mock_audit_log, 'info', [u'Logout'])
         self._assert_not_in_audit_log(mock_audit_log, 'info', [u'test'])
 
@@ -287,18 +293,18 @@ class LoginTest(CacheIsolationTestCase):
         response, _audit_log = self._login_response('test@edx.org', 'wrong_password')
         self._assert_response(response, success=False, value='Too many failed login attempts')
 
+    @patch.dict("django.conf.settings.FEATURES", {"DISABLE_SET_JWT_COOKIES_FOR_TESTS": False})
     def test_login_refresh(self):
         def _assert_jwt_cookie_present(response):
             self.assertEqual(response.status_code, 200)
             self.assertIn(jwt_cookies.jwt_refresh_cookie_name(), self.client.cookies)
 
         setup_login_oauth_client()
-        with JWT_COOKIES_FLAG.override(True):
-            response, _ = self._login_response('test@edx.org', 'test_password')
-            _assert_jwt_cookie_present(response)
+        response, _ = self._login_response('test@edx.org', 'test_password')
+        _assert_jwt_cookie_present(response)
 
-            response = self.client.post(reverse('login_refresh'))
-            _assert_jwt_cookie_present(response)
+        response = self.client.post(reverse('login_refresh'))
+        _assert_jwt_cookie_present(response)
 
     @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
     def test_single_session(self):
@@ -395,7 +401,7 @@ class LoginTest(CacheIsolationTestCase):
         url = reverse('logout')
 
         response = client1.get(url)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
 
     def test_change_enrollment_400(self):
         """
@@ -462,6 +468,8 @@ class LoginTest(CacheIsolationTestCase):
             )
             response_content = json.loads(response.content)
         self.assertFalse(response_content.get('success'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Password reset', mail.outbox[0].subject)
 
     @override_settings(PASSWORD_POLICY_COMPLIANCE_ROLLOUT_CONFIG={'ENFORCE_COMPLIANCE_ON_LOGIN': True})
     def test_check_password_policy_compliance_warning(self):
@@ -478,6 +486,25 @@ class LoginTest(CacheIsolationTestCase):
             response_content = json.loads(response.content)
             self.assertIn('Test warning', self.client.session['_messages'])
         self.assertTrue(response_content.get('success'))
+
+    @ddt.data(
+        ('test_password', 'test_password', True),
+        (unicodedata.normalize('NFKD', u'Ṗŕệṿïệẅ Ṯệẍt'),
+         unicodedata.normalize('NFKC', u'Ṗŕệṿïệẅ Ṯệẍt'), False),
+        (unicodedata.normalize('NFKC', u'Ṗŕệṿïệẅ Ṯệẍt'),
+         unicodedata.normalize('NFKD', u'Ṗŕệṿïệẅ Ṯệẍt'), True),
+        (unicodedata.normalize('NFKD', u'Ṗŕệṿïệẅ Ṯệẍt'),
+         unicodedata.normalize('NFKD', u'Ṗŕệṿïệẅ Ṯệẍt'), False),
+    )
+    @ddt.unpack
+    def test_password_unicode_normalization_login(self, password, password_entered, login_success):
+        """
+        Tests unicode normalization on user's passwords on login.
+        """
+        self.user.set_password(password)
+        self.user.save()
+        response, _ = self._login_response(self.user.email, password_entered)
+        self._assert_response(response, success=login_success)
 
     def _login_response(self, email, password, patched_audit_log=None, extra_post_params=None):
         """
