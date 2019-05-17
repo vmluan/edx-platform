@@ -793,6 +793,18 @@ PIPELINE_CSS = {
         ],
         'output_filename': 'css/cms-style-xmodule-annotations.css',
     },
+    'style-hosrem-v1': {
+        'source_filenames': [
+            'css/lms-hosrem-v1.css',
+        ],
+        'output_filename': 'css/lms-hosrem-v1.css',
+    },
+    'style-hosrem-v1-rtl': {
+        'source_filenames': [
+            'css/lms-hosrem-v1-rtl.css',
+        ],
+        'output_filename': 'css/lms-hosrem-v1-rtl.css',
+    },    
 }
 
 base_vendor_js = [
